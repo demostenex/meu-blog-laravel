@@ -1,58 +1,102 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Blog Pessoal - demostenesalbert.com.br
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Este é um blog pessoal completo e moderno, construído com **Laravel 11**, **Livewire (Volt)** e **Tailwind CSS**. Ele foi desenhado para ser leve, rápido, e com foco total na legibilidade (tipografia, suporte a Dark Mode e leitura sem distrações).
 
-## About Laravel
+## Funcionalidades Principais
+- 🚀 **Painel Administrativo:** Área restrita para criar, editar e excluir artigos.
+- 📝 **Editor Trix:** Editor de texto rico (WYSIWYG) ideal para copiar e colar formatações complexas (Twitter, Word).
+- 🧑‍💻 **Highlight.js:** Realce automático de sintaxe para blocos de código (perfeito para blogs de tecnologia).
+- 🎨 **Design Moderno:** Listagem limpa agrupada por mês/ano, sumário dinâmico ("Nesta Página") nos artigos longos e barra de busca global.
+- 🌓 **Modo Escuro:** Suporte nativo e fluido a Light/Dark mode.
+- 💬 **Comentários:** Integração ponta a ponta com **Disqus**.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠️ Como colocar em Produção (Deploy)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Para hospedar este blog na internet (VPS, Forge, Vapor, etc.), siga o passo a passo seguro abaixo.
 
-## Learning Laravel
+### 1. Requisitos do Servidor
+- PHP 8.2 ou superior.
+- Banco de Dados (PostgreSQL recomendado, mas MySQL/SQLite funcionam).
+- Servidor Web (Nginx/Apache).
+- Composer e Node.js/NPM instalados.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
+### 2. Clonando o Repositório
+No servidor, clone este repositório do GitHub:
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/SEU_USUARIO/meu-blog-laravel.git
+cd meu-blog-laravel
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 3. Instalando as Dependências
+Instale as bibliotecas do PHP e os pacotes front-end (ignorando os pacotes de desenvolvimento local):
+```bash
+composer install --optimize-autoloader --no-dev
+npm install
+npm run build
+```
 
-## Contributing
+### 4. Configurando o Arquivo `.env`
+O arquivo com as senhas e configurações NUNCA é enviado pelo Git. Crie o seu arquivo de produção a partir do modelo:
+```bash
+cp .env.example .env
+```
+Edite o arquivo `.env` (usando `nano .env` ou `vim .env`) e configure as variáveis principais:
+```env
+APP_NAME="Demostenes Albert"
+APP_ENV=production
+APP_KEY= # (Será preenchido no próximo passo)
+APP_DEBUG=false
+APP_URL=https://seublog.com.br # URL oficial do seu site
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Configurações do Banco de Dados de Produção
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=nome_do_seu_banco
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha_segura
+```
 
-## Code of Conduct
+### 5. Preparando o Banco de Dados e Segurança
+Gere a chave criptográfica única para o seu site e prepare as tabelas do banco:
+```bash
+php artisan key:generate
+php artisan migrate --force
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 6. Configurando as Imagens (Storage)
+Para que as fotos de capa e perfil carreguem, crie o link simbólico da pasta pública:
+```bash
+php artisan storage:link
+```
+*Lembre-se de configurar as permissões corretas da pasta `storage` e `bootstrap/cache` para que o servidor web (ex: www-data) possa escrever nelas.*
 
-## Security Vulnerabilities
+### 7. Otimizando para Velocidade
+Em produção, você deve dizer ao Laravel para fazer "cache" (salvar na memória) as configurações, rotas e views, deixando o site incrivelmente rápido:
+```bash
+php artisan config:cache
+php artisan event:cache
+php artisan route:cache
+php artisan view:cache
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 8. Criando o seu Usuário (Primeiro Acesso)
+Como o sistema não deve permitir que outras pessoas se registrem como administradores, crie a sua conta e **depois desative o registro** (removendo a rota de registro no código ou usando um bloqueio no servidor):
+1. Acesse `https://seublog.com.br/register`.
+2. Crie a sua conta de administrador.
+3. Vá em "Painel > Perfil", preencha sua Bio, suba sua foto de perfil e seu Favicon.
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🔧 Manutenção Diária
+
+Se você fizer alterações no código futuramente e enviá-las para o GitHub, para atualizar o servidor de produção, basta rodar:
+```bash
+git pull origin main
+composer install --no-dev --optimize-autoloader
+npm run build
+php artisan migrate --force
+php artisan optimize
+```
