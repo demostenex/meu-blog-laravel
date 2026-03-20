@@ -20,9 +20,14 @@ new #[Layout('layouts.blog')] class extends Component {
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ url()->current() }}">
     @if($post->cover_image)
-        <meta property="og:image" content="{{ asset('storage/' . $post->cover_image) }}">
+        <meta property="og:image" content="{{ secure_asset('storage/' . $post->cover_image) }}">
+        <meta property="og:image:secure_url" content="{{ secure_asset('storage/' . $post->cover_image) }}">
+        <meta property="og:image:type" content="image/{{ pathinfo($post->cover_image, PATHINFO_EXTENSION) }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta itemprop="image" content="{{ secure_asset('storage/' . $post->cover_image) }}">
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:image" content="{{ asset('storage/' . $post->cover_image) }}">
+        <meta name="twitter:image" content="{{ secure_asset('storage/' . $post->cover_image) }}">
     @else
         <meta name="twitter:card" content="summary">
     @endif
