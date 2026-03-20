@@ -9,6 +9,8 @@ services:
     container_name: meublog_app
     restart: unless-stopped
     working_dir: /var/www
+    env_file:
+      - .env
     volumes:
       - .:/var/www
       # Preserva o /vendor e o /node_modules gerados no build para que o volume (.) não os sobrescreva
@@ -23,6 +25,9 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-password}
     depends_on:
       - db
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - meublog-network
 
@@ -44,6 +49,8 @@ services:
     image: postgres:15-alpine
     container_name: meublog_db
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - POSTGRES_DB=${DB_DATABASE:-laravel}
       - POSTGRES_USER=${DB_USERNAME:-sail}
