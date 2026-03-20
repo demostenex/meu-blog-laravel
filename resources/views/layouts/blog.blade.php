@@ -7,6 +7,10 @@
 
         <title>{{ config('app.name', 'Blog') }}</title>
 
+        <!-- Meta Tags / SEO -->
+        <meta name="description" content="Blog pessoal de Demóstenes Albert - Tecnologia, Desenvolvimento e Artigos.">
+        @stack('meta')
+
         <!-- Favicon -->
         <link rel="icon" type="image/png" href="{{ asset('storage/favicon.png') }}?v={{ time() }}">
 

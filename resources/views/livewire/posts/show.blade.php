@@ -13,6 +13,23 @@ new #[Layout('layouts.blog')] class extends Component {
     }
 }; ?>
 
+@push('meta')
+    <title>{{ $post->title }} - {{ config('app.name') }}</title>
+    <meta property="og:title" content="{{ $post->title }}">
+    <meta property="og:description" content="{{ Str::limit(strip_tags($post->content), 160) }}">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ url()->current() }}">
+    @if($post->cover_image)
+        <meta property="og:image" content="{{ asset('storage/' . $post->cover_image) }}">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:image" content="{{ asset('storage/' . $post->cover_image) }}">
+    @else
+        <meta name="twitter:card" content="summary">
+    @endif
+    <meta name="twitter:title" content="{{ $post->title }}">
+    <meta name="twitter:description" content="{{ Str::limit(strip_tags($post->content), 160) }}">
+@endpush
+
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-12 items-start">
     
     <!-- Conteúdo Principal -->
