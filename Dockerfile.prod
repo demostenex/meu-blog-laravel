@@ -1,11 +1,11 @@
-FROM php:8.3-fpm-alpine
+FROM php:8.3-fpm
 
 # Argumentos que podem ser passados no momento do build
 ARG user=appuser
 ARG uid=1000
 
-# Atualiza pacotes e instala dependências necessárias
-RUN apk add --no-cache \
+# Atualiza pacotes e instala dependências necessárias (Debian)
+RUN apt-get update && apt-get install -y \
     curl \
     git \
     libpng-dev \
@@ -13,8 +13,10 @@ RUN apk add --no-cache \
     zip \
     unzip \
     libpq-dev \
-    oniguruma-dev \
-    npm
+    libonig-dev \
+    nodejs \
+    npm \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instala extensões do PHP para o Laravel e PostgreSQL
 RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
@@ -23,7 +25,7 @@ RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Cria um usuário não-root para rodar os comandos do Composer e Artisan
-RUN adduser -D -G www-data -u $uid $user \
+RUN useradd -G www-data,root -u $uid -d /home/$user $user \
     && mkdir -p /home/$user/.composer \
     && chown -R $user:www-data /home/$user
 
