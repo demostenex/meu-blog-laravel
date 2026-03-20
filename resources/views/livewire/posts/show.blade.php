@@ -80,8 +80,8 @@ new #[Layout('layouts.blog')] class extends Component {
     </div>
 
     <!-- Barra Lateral (On This Page / Table of Contents) -->
-    <aside class="hidden lg:block w-64 shrink-0">
-        <div class="sticky top-24">
+    <aside class="hidden lg:block w-64 shrink-0 h-full">
+        <div class="sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto pr-4">
             <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-widest mb-4 border-l-2 border-blue-500 pl-3">
                 Nesta Página
             </h3>

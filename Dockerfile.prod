@@ -34,7 +34,15 @@ WORKDIR /var/www
 
 # Copia os arquivos do projeto e altera as permissões
 COPY . .
-RUN chown -R $user:www-data /var/www
+
+# Ajuste de permissões para upload e cache
+RUN chown -R $user:www-data /var/www \
+    && chmod -R 775 /var/www/storage \
+    && chmod -R 775 /var/www/bootstrap/cache
+
+# Configuração de PHP para aceitar arquivos grandes
+RUN echo "upload_max_filesize=100M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size=100M" >> /usr/local/etc/php/conf.d/uploads.ini
 
 # Muda para o usuário sem privilégios
 USER $user
