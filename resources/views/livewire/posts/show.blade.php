@@ -13,10 +13,10 @@ new #[Layout('layouts.blog')] class extends Component {
     }
 }; ?>
 
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex flex-col lg:flex-row gap-12 items-start">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-12 items-start">
     
     <!-- Conteúdo Principal -->
-    <div class="flex-1 min-w-0 max-w-3xl w-full">
+    <div class="min-w-0 w-full">
         <article>
             <!-- Título -->
             <header class="mb-12 text-center lg:text-left">
@@ -25,7 +25,7 @@ new #[Layout('layouts.blog')] class extends Component {
                         Artigo
                     </span>
                 </div>
-                <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-6xl mb-6">
+                <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl lg:text-3xl mb-6">
                     {{ $post->title }}
                 </h1>
                 <div class="flex items-center justify-center lg:justify-start gap-3 text-sm text-gray-500 dark:text-gray-400">
@@ -50,7 +50,14 @@ new #[Layout('layouts.blog')] class extends Component {
             @endif
 
             <!-- Conteúdo do Artigo -->
-            <div id="article-content" class="trix-content text-gray-800 dark:text-gray-200 leading-relaxed text-lg sm:text-xl selection:bg-blue-100 dark:selection:bg-blue-900">
+            <style>
+                #article-content h1 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; color: inherit; }
+                #article-content h2 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: inherit; }
+                #article-content h3 { font-size: 1.125rem; line-height: 1.5rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; color: inherit; }
+                #article-content strong { color: inherit; font-weight: 700; }
+                #article-content p { margin-bottom: 1.5rem; }
+            </style>
+            <div id="article-content" class="trix-content text-gray-800 dark:text-gray-200 leading-relaxed text-base sm:text-lg selection:bg-blue-100 dark:selection:bg-blue-900">
                 {!! $post->content !!}
             </div>
         </article>
@@ -79,15 +86,18 @@ new #[Layout('layouts.blog')] class extends Component {
         </div>
     </div>
 
-    <!-- Barra Lateral (On This Page / Table of Contents) -->
-    <aside class="hidden lg:block w-64 shrink-0 h-full">
-        <div class="sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto pr-4">
-            <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-widest mb-4 border-l-2 border-blue-500 pl-3">
+    <!-- Barra Lateral (Sumário Dinâmico) -->
+    <aside class="hidden lg:block sticky top-28 self-start z-20 w-72">
+        <div class="max-h-[calc(100vh-10rem)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <span class="w-8 h-px bg-gray-200 dark:bg-gray-800"></span>
                 Nesta Página
             </h3>
-            <ul id="toc-list" class="space-y-3 text-sm text-gray-500 dark:text-gray-400">
-                <!-- Gerado via JavaScript -->
-            </ul>
+            <nav>
+                <ul id="toc-list" class="space-y-4 text-xs font-medium text-gray-500 dark:text-gray-400 border-l border-gray-100 dark:border-gray-800">
+                    <!-- Gerado via JavaScript -->
+                </ul>
+            </nav>
         </div>
     </aside>
 
@@ -133,16 +143,18 @@ new #[Layout('layouts.blog')] class extends Component {
 
                 // Cria o item da lista
                 const li = document.createElement('li');
+                li.className = '-ml-px border-l border-transparent hover:border-blue-500 transition-colors';
+                
                 const a = document.createElement('a');
                 a.href = '#' + id;
                 a.innerText = heading.innerText;
-                a.className = 'hover:text-blue-600 dark:hover:text-blue-400 transition-colors block line-clamp-2 leading-tight';
+                a.className = 'pl-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block line-clamp-2 leading-tight py-0.5';
                 
-                // Aplica indentação dependendo se é H2 ou H3
+                // Aplica indentação adicional dependendo se é H2 ou H3
                 if (heading.tagName === 'H2') {
-                    a.classList.add('ml-2');
+                    a.classList.add('pl-6');
                 } else if (heading.tagName === 'H3') {
-                    a.classList.add('ml-4');
+                    a.classList.add('pl-8');
                 }
 
                 li.appendChild(a);
