@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: meublog-app:latest
+    container_name: meublog_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      # Preserva o /vendor e o /node_modules gerados no build para que o volume (.) não os sobrescreva
+      - vendor:/var/www/vendor
+      - node_modules:/var/www/node_modules
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-laravel}
+      - DB_USERNAME=${DB_USERNAME:-sail}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+    depends_on:
+      - db
+    networks:
+      - meublog-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: meublog_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - meublog-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: meublog_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-laravel}
+      - POSTGRES_USER=${DB_USERNAME:-sail}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+    volumes:
+      - meublog-pgsql:/var/lib/postgresql/data
+    networks:
+      - meublog-network
+
+networks:
+  meublog-network:
+    driver: bridge
+
+volumes:
+  meublog-pgsql:
+  vendor:
+  node_modules:

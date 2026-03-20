@@ -1,0 +1,51 @@
+FROM php:8.3-fpm-alpine
+
+# Argumentos que podem ser passados no momento do build
+ARG user=appuser
+ARG uid=1000
+
+# Atualiza pacotes e instala dependências necessárias
+RUN apk add --no-cache \
+    curl \
+    git \
+    libpng-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    libpq-dev \
+    oniguruma-dev \
+    npm
+
+# Instala extensões do PHP para o Laravel e PostgreSQL
+RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
+
+# Copia o Composer mais recente do repositório oficial
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Cria um usuário não-root para rodar os comandos do Composer e Artisan
+RUN adduser -D -G www-data -u $uid $user \
+    && mkdir -p /home/$user/.composer \
+    && chown -R $user:www-data /home/$user
+
+# Define o diretório de trabalho
+WORKDIR /var/www
+
+# Copia os arquivos do projeto e altera as permissões
+COPY . .
+RUN chown -R $user:www-data /var/www
+
+# Muda para o usuário sem privilégios
+USER $user
+
+# Instala as dependências do PHP (sem os pacotes de dev/testes)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+# Instala pacotes NPM e constrói o Frontend (Vite/Tailwind)
+RUN npm install \
+    && npm run build
+
+# Expõe a porta padrão do PHP-FPM
+EXPOSE 9000
+
+# Executa o PHP-FPM
+CMD ["php-fpm"]

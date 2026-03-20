@@ -14,89 +14,113 @@ Este é um blog pessoal completo e moderno, construído com **Laravel 11**, **Li
 
 ## 🛠️ Como colocar em Produção (Deploy)
 
-Para hospedar este blog na internet (VPS, Forge, Vapor, etc.), siga o passo a passo seguro abaixo.
+Você tem duas opções para hospedar este blog na internet: a forma **Pura** (instalando tudo diretamente na sua VPS/Servidor) ou via **Docker** (usando os contêineres otimizados que criamos).
 
-### 1. Requisitos do Servidor
-- PHP 8.2 ou superior.
-- Banco de Dados (PostgreSQL recomendado, mas MySQL/SQLite funcionam).
-- Servidor Web (Nginx/Apache).
-- Composer e Node.js/NPM instalados.
+---
 
-### 2. Clonando o Repositório
-No servidor, clone este repositório do GitHub:
+### Opção 1: Instalação Pura (Direto no Servidor)
+
+Esta é a opção tradicional, ideal para servidores compartilhados ou se você usa o Laravel Forge.
+
+**1. Requisitos:** PHP 8.2+, Servidor Web (Nginx/Apache), Composer, Node.js e um Banco de Dados (PostgreSQL/MySQL).
+
+**2. Instalação:**
 ```bash
 git clone https://github.com/SEU_USUARIO/meu-blog-laravel.git
 cd meu-blog-laravel
-```
+cp .env.example .env
 
-### 3. Instalando as Dependências
-Instale as bibliotecas do PHP e os pacotes front-end (ignorando os pacotes de desenvolvimento local):
-```bash
+# Instale as dependências e compile o CSS
 composer install --optimize-autoloader --no-dev
 npm install
 npm run build
-```
 
-### 4. Configurando o Arquivo `.env`
-O arquivo com as senhas e configurações NUNCA é enviado pelo Git. Crie o seu arquivo de produção a partir do modelo:
-```bash
-cp .env.example .env
-```
-Edite o arquivo `.env` (usando `nano .env` ou `vim .env`) e configure as variáveis principais:
-```env
-APP_NAME="Demostenes Albert"
-APP_ENV=production
-APP_KEY= # (Será preenchido no próximo passo)
-APP_DEBUG=false
-APP_URL=https://seublog.com.br # URL oficial do seu site
-
-# Configurações do Banco de Dados de Produção
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=nome_do_seu_banco
-DB_USERNAME=seu_usuario
-DB_PASSWORD=sua_senha_segura
-```
-
-### 5. Preparando o Banco de Dados e Segurança
-Gere a chave criptográfica única para o seu site e prepare as tabelas do banco:
-```bash
+# Gere a chave e crie o banco (Configure o .env antes com as senhas do banco!)
 php artisan key:generate
 php artisan migrate --force
-```
-
-### 6. Configurando as Imagens (Storage)
-Para que as fotos de capa e perfil carreguem, crie o link simbólico da pasta pública:
-```bash
 php artisan storage:link
-```
-*Lembre-se de configurar as permissões corretas da pasta `storage` e `bootstrap/cache` para que o servidor web (ex: www-data) possa escrever nelas.*
 
-### 7. Otimizando para Velocidade
-Em produção, você deve dizer ao Laravel para fazer "cache" (salvar na memória) as configurações, rotas e views, deixando o site incrivelmente rápido:
+# Otimize o cache para produção
+php artisan optimize
+```
+
+---
+
+### Opção 2: Instalação via Docker (Recomendada para VPS limpa)
+
+Esta opção usa a nossa infraestrutura Docker super otimizada (`Dockerfile.prod` e `docker-compose.prod.yml`). Ideal se você comprou uma VPS limpa (DigitalOcean, AWS, etc) e só quer instalar o Docker.
+
+**1. Requisitos:** Apenas Docker e Docker Compose (v2) instalados na VPS.
+
+**2. Instalação:**
 ```bash
-php artisan config:cache
-php artisan event:cache
-php artisan route:cache
-php artisan view:cache
+git clone https://github.com/SEU_USUARIO/meu-blog-laravel.git
+cd meu-blog-laravel
+cp .env.example .env
 ```
 
-### 8. Criando o seu Usuário (Primeiro Acesso)
-Como o sistema não deve permitir que outras pessoas se registrem como administradores, crie a sua conta e **depois desative o registro** (removendo a rota de registro no código ou usando um bloqueio no servidor):
-1. Acesse `https://seublog.com.br/register`.
+**3. Configure o `.env`:**
+Edite o arquivo (ex: `nano .env`) com estas configurações obrigatórias para o Docker:
+```env
+APP_NAME="Seu Nome"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://seublog.com.br
+
+DB_CONNECTION=pgsql
+DB_HOST=db # IMPORTANTE: O host no Docker se chama 'db'
+DB_PORT=5432
+DB_DATABASE=blog
+DB_USERNAME=blog_user
+DB_PASSWORD=sua_senha_secreta_aqui
+```
+
+**4. Suba o Site:**
+Mande o Docker construir o site (ele vai instalar o PHP, Nginx, compilar o Tailwind, etc, tudo sozinho):
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+**5. Segurança Final:**
+Entre no contêiner do Laravel e rode os comandos finais:
+```bash
+docker compose -f docker-compose.prod.yml exec app sh
+
+# Dentro do contêiner:
+php artisan key:generate
+php artisan migrate --force
+php artisan storage:link
+php artisan optimize
+exit
+```
+
+---
+
+### 🔒 Criando o seu Usuário (Primeiro Acesso)
+O nosso blog tem uma **Trava de Segurança (Autor Único)**. A página de registro só existe se o banco estiver 100% vazio.
+1. Acesse imediatamente `http://seu-dominio/register`.
 2. Crie a sua conta de administrador.
-3. Vá em "Painel > Perfil", preencha sua Bio, suba sua foto de perfil e seu Favicon.
+3. *Magia:* No momento em que a conta for criada, a página de registro deixará de existir para o público, impedindo invasores!
+4. Vá em "Painel > Perfil", preencha sua Bio, suba sua foto de perfil e seu Favicon.
 
 ---
 
 ## 🔧 Manutenção Diária
 
-Se você fizer alterações no código futuramente e enviá-las para o GitHub, para atualizar o servidor de produção, basta rodar:
+Se você alterar o código futuramente e enviá-lo para o GitHub, atualize seu servidor assim:
+
+**Se usou a Instalação Pura:**
 ```bash
-git pull origin main
+git pull origin master
 composer install --no-dev --optimize-autoloader
 npm run build
 php artisan migrate --force
 php artisan optimize
+```
+
+**Se usou a Instalação via Docker:**
+```bash
+git pull origin master
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec app php artisan optimize
 ```
