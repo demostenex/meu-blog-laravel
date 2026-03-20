@@ -46,7 +46,7 @@
         <nav class="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-50">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
-                    <a href="/" class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">{{ config('app.name', 'Blog') }}</a>
+                    <a href="/" class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">{{ config('app.name') }}</a>
                     
                     <div class="hidden sm:flex flex-1 mx-8 justify-end">
                         <livewire:global-search />
@@ -80,7 +80,7 @@
         <footer class="bg-gray-50 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 py-12 mt-20">
             <div class="max-w-5xl mx-auto px-4 text-center">
                 <p class="text-gray-500 dark:text-gray-400 text-sm">
-                    &copy; {{ date('Y') }} {{ config('app.name', 'Blog') }}. Todos os direitos reservados.
+                    &copy; {{ date('Y') }} {{ config('app.name') }}. Todos os direitos reservados.
                 </p>
             </div>
         </footer>

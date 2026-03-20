@@ -105,6 +105,20 @@ O nosso blog tem uma **Trava de Segurança (Autor Único)**. A página de regist
 
 ---
 
+### ⚠️ Nota sobre Mudanças Visuais (CSS/JS)
+
+Este projeto utiliza **Tailwind CSS 4** e **Vite**. Se você fizer qualquer alteração nos arquivos de visual (Blade, CSS ou JavaScript), você **precisa** rodar o comando abaixo para que as mudanças apareçam no navegador:
+
+```bash
+# No ambiente de desenvolvimento (Sail):
+./vendor/bin/sail npm run build
+
+# No ambiente de produção:
+npm run build
+```
+
+---
+
 ## 🔧 Manutenção Diária
 
 Se você alterar o código futuramente e enviá-lo para o GitHub, atualize seu servidor assim:
