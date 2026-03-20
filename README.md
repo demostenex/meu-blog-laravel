@@ -52,11 +52,17 @@ Esta opção usa a nossa infraestrutura Docker super otimizada (`Dockerfile.prod
 
 **1. Requisitos:** Apenas Docker e Docker Compose (v2) instalados na VPS.
 
-**2. Instalação:**
+**2. Preparação do Ambiente:**
 ```bash
 git clone https://github.com/SEU_USUARIO/meu-blog-laravel.git
 cd meu-blog-laravel
 cp .env.example .env
+
+# Configure o seu Dockerfile de produção a partir do exemplo:
+cp Dockerfile.prod.example Dockerfile.prod
+
+# (Opcional) Ajuste o usuário no Dockerfile.prod se o seu usuário Linux não for o padrão:
+# O padrão é 'demostenes' com UID '1000'.
 ```
 
 **3. Configure o `.env`:**
@@ -68,7 +74,7 @@ APP_DEBUG=false
 APP_URL=https://seublog.com.br
 
 DB_CONNECTION=pgsql
-DB_HOST=db # IMPORTANTE: O host no Docker se chama 'db'
+DB_HOST=db # Host interno do Docker
 DB_PORT=5432
 DB_DATABASE=blog
 DB_USERNAME=blog_user
@@ -76,22 +82,25 @@ DB_PASSWORD=sua_senha_secreta_aqui
 ```
 
 **4. Suba o Site:**
-Mande o Docker construir o site (ele vai instalar o PHP, Nginx, compilar o Tailwind, etc, tudo sozinho):
+Mande o Docker construir o site (ele vai instalar o PHP, Nginx, compilar o Tailwind, limpar caches e otimizar tudo sozinho):
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-**5. Segurança Final:**
-Entre no contêiner do Laravel e rode os comandos finais:
+**5. Comandos Finais (Importante):**
+Para que o site funcione perfeitamente no primeiro acesso:
 ```bash
-docker compose -f docker-compose.prod.yml exec app sh
+# Rode as migrações (Cria as tabelas no Banco de Dados)
+docker compose -f docker-compose.prod.yml exec app php artisan migrate --force
 
-# Dentro do contêiner:
-php artisan key:generate
-php artisan migrate --force
-php artisan storage:link
-php artisan optimize
-exit
+# Crie a chave da aplicação (Se ainda não tiver no .env)
+docker compose -f docker-compose.prod.yml exec app php artisan key:generate
+
+# Corrija o Link Simbólico do Storage (Para fotos e uploads funcionarem)
+docker compose -f docker-compose.prod.yml exec app php artisan storage:link --force
+
+# Otimize o cache para performance máxima
+docker compose -f docker-compose.prod.yml exec app php artisan optimize
 ```
 
 ---

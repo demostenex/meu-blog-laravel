@@ -5,11 +5,8 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 Route::middleware('guest')->group(function () {
-    // A rota de registro só é exibida se o banco estiver vazio (Blog de Autor Único)
-    if (\App\Models\User::count() === 0) {
-        Volt::route('register', 'pages.auth.register')
-            ->name('register');
-    }
+    Volt::route('register', 'pages.auth.register')
+        ->name('register');
 
     Volt::route('login', 'pages.auth.login')
         ->name('login');

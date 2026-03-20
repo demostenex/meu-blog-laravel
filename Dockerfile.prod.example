@@ -47,6 +47,9 @@ RUN echo "upload_max_filesize=100M" > /usr/local/etc/php/conf.d/uploads.ini \
 # Muda para o usuário sem privilégios
 USER $user
 
+# Garante que o diretório de trabalho esteja limpo de caches locais
+RUN rm -rf bootstrap/cache/*.php
+
 # Instala as dependências do PHP (sem os pacotes de dev/testes)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 

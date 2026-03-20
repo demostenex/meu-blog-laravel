@@ -16,6 +16,16 @@ new #[Layout('layouts.guest')] class extends Component
     public string $password_confirmation = '';
 
     /**
+     * Redirect if a user already exists.
+     */
+    public function mount(): void
+    {
+        if (User::count() > 0) {
+            $this->redirect(route('login', absolute: false), navigate: true);
+        }
+    }
+
+    /**
      * Handle an incoming registration request.
      */
     public function register(): void
