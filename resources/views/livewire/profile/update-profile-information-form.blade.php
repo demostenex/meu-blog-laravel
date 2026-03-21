@@ -14,6 +14,7 @@ new class extends Component
 
     public string $name = '';
     public string $email = '';
+    public string $blog_description = '';
     public string $about_me = '';
     public $photo;
     public $favicon;
@@ -32,6 +33,7 @@ new class extends Component
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->blog_description = Auth::user()->blog_description ?? '';
         $this->about_me = Auth::user()->about_me ?? '';
         $this->gemini_api_key = Auth::user()->gemini_api_key ?? '';
         $this->gemini_model = Auth::user()->gemini_model ?? 'gemini-2.0-flash';
@@ -50,6 +52,7 @@ new class extends Component
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
             'photo' => ['nullable', 'image', 'max:10240'],
+            'blog_description' => ['nullable', 'string', 'max:255'],
             'about_me' => ['nullable', 'string', 'max:5000'],
             'favicon' => ['nullable', 'image', 'mimes:ico,png,jpg,jpeg', 'max:10240'],
             'gemini_api_key' => ['nullable', 'string', 'max:255'],
@@ -62,6 +65,7 @@ new class extends Component
         $user->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'blog_description' => $validated['blog_description'],
             'about_me' => $validated['about_me'],
             'gemini_api_key' => $validated['gemini_api_key'],
             'gemini_model' => $validated['gemini_model'] ?? 'gemini-2.0-flash',
@@ -197,6 +201,14 @@ new class extends Component
                     @endif
                 </div>
             @endif
+        </div>
+
+        <!-- Descrição do Blog (SEO) -->
+        <div>
+            <x-input-label for="blog_description" :value="__('Descrição do Blog (SEO)')" />
+            <x-text-input wire:model="blog_description" id="blog_description" type="text" class="mt-1 block w-full" maxlength="255" placeholder="Ex: Tecnologia, desenvolvimento e reflexões — por Demóstenes Albert." />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Máx. 255 caracteres. Usada como meta description em todo o blog.</p>
+            <x-input-error class="mt-2" :messages="$errors->get('blog_description')" />
         </div>
 
         <!-- Sobre Mim (Bio) -->

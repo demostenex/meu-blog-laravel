@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'title', 'slug', 'cover_image', 'content'])]
+#[Fillable(['user_id', 'title', 'slug', 'cover_image', 'content', 'views_count'])]
 class Post extends Model
 {
     public function user(): BelongsTo
@@ -22,5 +22,10 @@ class Post extends Model
     public function latestAiComment(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(AiComment::class)->latestOfMany();
+    }
+
+    public function incrementViews(): void
+    {
+        $this->incrementWithoutTouching('views_count');
     }
 }

@@ -10,15 +10,22 @@ new #[Layout('layouts.blog')] class extends Component {
     public function mount(Post $post)
     {
         $this->post = $post;
+
+        if (! auth()->check() || auth()->id() !== $post->user_id) {
+            $post->incrementViews();
+        }
     }
 }; ?>
 
 @push('meta')
+    @php $description = Str::limit(strip_tags($post->content), 160); @endphp
     <title>{{ $post->title }} - {{ config('app.name') }}</title>
+    <meta name="description" content="{{ $description }}">
+    <link rel="canonical" href="{{ route('posts.show', $post->slug) }}">
     <meta property="og:title" content="{{ $post->title }}">
-    <meta property="og:description" content="{{ Str::limit(strip_tags($post->content), 160) }}">
+    <meta property="og:description" content="{{ $description }}">
     <meta property="og:type" content="article">
-    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:url" content="{{ route('posts.show', $post->slug) }}">
     @if($post->cover_image)
         <meta property="og:image" content="{{ secure_asset('storage/' . $post->cover_image) }}">
         <meta property="og:image:secure_url" content="{{ secure_asset('storage/' . $post->cover_image) }}">
@@ -32,7 +39,30 @@ new #[Layout('layouts.blog')] class extends Component {
         <meta name="twitter:card" content="summary">
     @endif
     <meta name="twitter:title" content="{{ $post->title }}">
-    <meta name="twitter:description" content="{{ Str::limit(strip_tags($post->content), 160) }}">
+    <meta name="twitter:description" content="{{ $description }}">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "{{ addslashes($post->title) }}",
+        "description": "{{ addslashes($description) }}",
+        "datePublished": "{{ $post->created_at->toIso8601String() }}",
+        "dateModified": "{{ $post->updated_at->toIso8601String() }}",
+        "url": "{{ route('posts.show', $post->slug) }}",
+        @if($post->cover_image)
+        "image": "{{ secure_asset('storage/' . $post->cover_image) }}",
+        @endif
+        "author": {
+            "@type": "Person",
+            "name": "{{ addslashes($post->user->name) }}",
+            "url": "{{ route('author.show', $post->user) }}"
+        },
+        "publisher": {
+            "@type": "Person",
+            "name": "{{ addslashes($post->user->name) }}"
+        }
+    }
+    </script>
 @endpush
 
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-12 items-start">

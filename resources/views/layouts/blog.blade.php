@@ -8,7 +8,10 @@
         <title>{{ config('app.name', 'Blog') }}</title>
 
         <!-- Meta Tags / SEO -->
-        <meta name="description" content="Blog pessoal de Demóstenes Albert - Tecnologia, Desenvolvimento e Artigos.">
+        @php $blogOwner = App\Models\User::select('blog_description')->first(); @endphp
+        <meta name="robots" content="index, follow">
+        <link rel="canonical" href="{{ url()->current() }}">
+        <meta name="description" content="{{ $blogOwner?->blog_description ?: config('app.name') . ' - Blog.' }}">
         @stack('meta')
 
         <!-- Favicon -->
