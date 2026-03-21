@@ -210,20 +210,6 @@ new class extends Component {
     </div>
 
     <style>
-        /* Toolbar Trix flutuante */
-        trix-toolbar {
-            position: sticky;
-            top: 0;
-            z-index: 30;
-            background-color: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 0.25rem 0;
-        }
-        .dark trix-toolbar {
-            background-color: #1f2937;
-            border-bottom-color: #374151;
-        }
-
         /* Ajustes do Trix para Dark Mode */
         .dark trix-toolbar .trix-button-group {
             background-color: #374151;
@@ -246,5 +232,52 @@ new class extends Component {
         .dark trix-editor:empty:not(:focus)::before {
             color: #9ca3af;
         }
+
+        /* Toolbar flutuante quando fixada via JS */
+        trix-toolbar.trix-floating {
+            position: fixed;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .dark trix-toolbar.trix-floating {
+            background-color: #1f2937;
+            border-bottom-color: #374151;
+        }
     </style>
+
+    <script>
+        document.addEventListener('trix-initialize', () => {
+            const toolbar = document.querySelector('trix-toolbar');
+            const editor  = document.querySelector('trix-editor');
+            if (!toolbar || !editor) return;
+
+            // Espaçador para evitar salto de layout quando a toolbar for fixada
+            const spacer = document.createElement('div');
+            spacer.style.display = 'none';
+            toolbar.parentNode.insertBefore(spacer, toolbar);
+
+            function update() {
+                const rect   = editor.getBoundingClientRect();
+                const height = toolbar.offsetHeight;
+
+                if (rect.top < 0 && rect.bottom > height) {
+                    spacer.style.cssText = `display:block;height:${height}px`;
+                    toolbar.style.left  = rect.left + 'px';
+                    toolbar.style.width = rect.width + 'px';
+                    toolbar.classList.add('trix-floating');
+                } else {
+                    spacer.style.cssText = 'display:none';
+                    toolbar.style.left  = '';
+                    toolbar.style.width = '';
+                    toolbar.classList.remove('trix-floating');
+                }
+            }
+
+            window.addEventListener('scroll', update, { passive: true });
+            window.addEventListener('resize', update, { passive: true });
+        });
+    </script>
 </div>
