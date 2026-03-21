@@ -39,7 +39,7 @@ new class extends Component {
         ];
     }
 
-    public function save()
+    private function updatePost(): void
     {
         $this->validate();
 
@@ -53,12 +53,32 @@ new class extends Component {
         }
 
         $this->post->update([
-            'title' => $this->title,
-            'content' => $this->content,
+            'title'       => $this->title,
+            'content'     => $this->content,
             'cover_image' => $imagePath,
         ]);
+    }
 
+    public function save()
+    {
+        $this->updatePost();
         session()->flash('status', 'Artigo atualizado com sucesso!');
+        $this->redirectRoute('posts.index', navigate: true);
+    }
+
+    public function saveDraft()
+    {
+        $this->updatePost();
+        $this->post->update(['published_at' => null]);
+        session()->flash('status', 'Salvo como rascunho.');
+        $this->redirectRoute('posts.edit', ['post' => $this->post], navigate: true);
+    }
+
+    public function publish()
+    {
+        $this->updatePost();
+        $this->post->update(['published_at' => $this->post->published_at ?? now()]);
+        session()->flash('status', 'Artigo publicado com sucesso!');
         $this->redirectRoute('posts.index', navigate: true);
     }
 
@@ -93,9 +113,25 @@ new class extends Component {
     <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
 
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Editar Artigo') }}
-        </h2>
+        <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight flex items-center gap-3">
+                {{ __('Editar Artigo') }}
+                @if($post->isPublished())
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400">
+                        ✅ Publicado
+                    </span>
+                @else
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400">
+                        📝 Rascunho
+                    </span>
+                @endif
+            </h2>
+            <a href="{{ route('posts.show', $post->slug) }}" target="_blank"
+               class="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Visualizar
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-12">
@@ -138,10 +174,28 @@ new class extends Component {
                     </div>
                     <x-input-error class="mt-2" :messages="$errors->get('content')" />
 
-                    <div class="flex items-center gap-4 mt-6">
-                        <x-primary-button>{{ __('Atualizar Artigo') }}</x-primary-button>
+                    <div class="flex items-center flex-wrap gap-3 mt-6">
+                        @if($post->isPublished())
+                            <x-primary-button wire:click="save" wire:loading.attr="disabled" type="button">
+                                <span wire:loading.remove wire:target="save">{{ __('Salvar Alterações') }}</span>
+                                <span wire:loading wire:target="save">Salvando...</span>
+                            </x-primary-button>
+                            <x-secondary-button wire:click="saveDraft" wire:loading.attr="disabled" type="button">
+                                <span wire:loading.remove wire:target="saveDraft">📝 Voltar para Rascunho</span>
+                                <span wire:loading wire:target="saveDraft">Salvando...</span>
+                            </x-secondary-button>
+                        @else
+                            <x-primary-button wire:click="publish" wire:loading.attr="disabled" type="button">
+                                <span wire:loading.remove wire:target="publish">🚀 Publicar Artigo</span>
+                                <span wire:loading wire:target="publish">Publicando...</span>
+                            </x-primary-button>
+                            <x-secondary-button wire:click="save" wire:loading.attr="disabled" type="button">
+                                <span wire:loading.remove wire:target="save">💾 Salvar Rascunho</span>
+                                <span wire:loading wire:target="save">Salvando...</span>
+                            </x-secondary-button>
+                        @endif
                         
-                        <a href="{{ route('posts.index') }}" wire:navigate class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                        <a href="{{ route('posts.index') }}" wire:navigate class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm">
                             Cancelar
                         </a>
                     </div>

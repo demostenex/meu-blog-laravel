@@ -11,6 +11,11 @@ new #[Layout('layouts.blog')] class extends Component {
     {
         $this->post = $post;
 
+        // Rascunho só pode ser visto pelo dono
+        if (! $post->isPublished()) {
+            abort_if(auth()->id() !== $post->user_id, 404);
+        }
+
         if (! auth()->check() || auth()->id() !== $post->user_id) {
             $post->incrementViews();
         }
@@ -73,6 +78,19 @@ new #[Layout('layouts.blog')] class extends Component {
 @endpush
 
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-12 items-start">
+    
+    @if(! $post->isPublished() && auth()->id() === $post->user_id)
+    <div class="col-span-full bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 text-sm text-yellow-800 dark:text-yellow-300">
+            <span class="text-xl">📝</span>
+            <span><strong>Pré-visualização</strong> — este artigo ainda está como rascunho e não aparece no blog.</span>
+        </div>
+        <a href="{{ route('posts.edit', $post) }}"
+           class="shrink-0 text-sm font-semibold text-yellow-700 dark:text-yellow-400 hover:underline">
+            Editar / Publicar →
+        </a>
+    </div>
+    @endif
     
     <!-- Conteúdo Principal -->
     <div class="min-w-0 w-full">

@@ -20,7 +20,7 @@ new class extends Component {
         ];
     }
 
-    public function save()
+    private function storePost(bool $publish): \App\Models\Post
     {
         $this->validate();
 
@@ -29,15 +29,27 @@ new class extends Component {
             $imagePath = $this->cover_image->store('covers', 'public');
         }
 
-        auth()->user()->posts()->create([
-            'title' => $this->title,
-            'slug' => Str::slug($this->title) . '-' . uniqid(),
-            'content' => $this->content,
-            'cover_image' => $imagePath,
+        return auth()->user()->posts()->create([
+            'title'        => $this->title,
+            'slug'         => Str::slug($this->title) . '-' . uniqid(),
+            'content'      => $this->content,
+            'cover_image'  => $imagePath,
+            'published_at' => $publish ? now() : null,
         ]);
+    }
 
+    public function save()
+    {
+        $this->storePost(true);
         session()->flash('status', 'Artigo publicado com sucesso!');
         $this->redirectRoute('posts.index', navigate: true);
+    }
+
+    public function saveDraft()
+    {
+        $post = $this->storePost(false);
+        session()->flash('status', 'Rascunho salvo com sucesso!');
+        $this->redirectRoute('posts.edit', ['post' => $post], navigate: true);
     }
 }; ?>
 
@@ -87,11 +99,15 @@ new class extends Component {
                     <x-input-error class="mt-2" :messages="$errors->get('content')" />
 
                     <div class="flex items-center gap-4 mt-6">
-                        <x-primary-button>{{ __('Publicar Artigo') }}</x-primary-button>
+                        <x-primary-button wire:click="save" wire:loading.attr="disabled" type="button">
+                            <span wire:loading.remove wire:target="save">{{ __('Publicar Artigo') }}</span>
+                            <span wire:loading wire:target="save">Publicando...</span>
+                        </x-primary-button>
 
-                        <x-action-message class="me-3" on="post-created">
-                            {{ __('Publicado.') }}
-                        </x-action-message>
+                        <x-secondary-button wire:click="saveDraft" wire:loading.attr="disabled" type="button">
+                            <span wire:loading.remove wire:target="saveDraft">💾 Salvar Rascunho</span>
+                            <span wire:loading wire:target="saveDraft">Salvando...</span>
+                        </x-secondary-button>
                         
                         <a href="{{ route('posts.index') }}" wire:navigate class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
                             Cancelar

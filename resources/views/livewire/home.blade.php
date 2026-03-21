@@ -9,7 +9,7 @@ use Carbon\Carbon;
 new #[Layout('layouts.blog')] class extends Component {
     public function with(): array
     {
-        $posts = Post::with('user')->latest()->paginate(15);
+        $posts = Post::published()->with('user')->latest('published_at')->paginate(15);
 
         // Agrupa os posts da página atual por Mês e Ano
         Carbon::setLocale('pt_BR');
