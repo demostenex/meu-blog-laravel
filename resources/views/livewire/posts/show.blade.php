@@ -41,27 +41,30 @@ new #[Layout('layouts.blog')] class extends Component {
     <meta name="twitter:title" content="{{ $post->title }}">
     <meta name="twitter:description" content="{{ $description }}">
     <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": "{{ addslashes($post->title) }}",
-        "description": "{{ addslashes($description) }}",
-        "datePublished": "{{ $post->created_at->toIso8601String() }}",
-        "dateModified": "{{ $post->updated_at->toIso8601String() }}",
-        "url": "{{ route('posts.show', $post->slug) }}",
-        @if($post->cover_image)
-        "image": "{{ secure_asset('storage/' . $post->cover_image) }}",
-        @endif
-        "author": {
-            "@type": "Person",
-            "name": "{{ addslashes($post->user->name) }}",
-            "url": "{{ route('author.show', $post->user) }}"
-        },
-        "publisher": {
-            "@type": "Person",
-            "name": "{{ addslashes($post->user->name) }}"
-        }
+    @php
+    $jsonLd = [
+        '@context'      => 'https://schema.org',
+        '@type'         => 'Article',
+        'headline'      => $post->title,
+        'description'   => $description,
+        'datePublished' => $post->created_at->toIso8601String(),
+        'dateModified'  => $post->updated_at->toIso8601String(),
+        'url'           => route('posts.show', $post->slug),
+        'author'        => [
+            '@type' => 'Person',
+            'name'  => $post->user->name,
+            'url'   => route('author.show', $post->user),
+        ],
+        'publisher' => [
+            '@type' => 'Person',
+            'name'  => $post->user->name,
+        ],
+    ];
+    if ($post->cover_image) {
+        $jsonLd['image'] = secure_asset('storage/' . $post->cover_image);
     }
+    echo json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    @endphp
     </script>
 @endpush
 
