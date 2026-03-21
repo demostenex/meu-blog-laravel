@@ -210,6 +210,20 @@ new class extends Component {
     </div>
 
     <style>
+        /* Toolbar Trix flutuante */
+        trix-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.25rem 0;
+        }
+        .dark trix-toolbar {
+            background-color: #1f2937;
+            border-bottom-color: #374151;
+        }
+
         /* Ajustes do Trix para Dark Mode */
         .dark trix-toolbar .trix-button-group {
             background-color: #374151;
