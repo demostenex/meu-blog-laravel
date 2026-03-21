@@ -77,10 +77,11 @@ new #[Layout('layouts.blog')] class extends Component {
     </script>
 @endpush
 
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-12 items-start">
-    
-    @if(! $post->isPublished() && auth()->id() === $post->user_id)
-    <div class="col-span-full bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+<div>
+
+@if(! $post->isPublished() && auth()->id() === $post->user_id)
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3 text-sm text-yellow-800 dark:text-yellow-300">
             <span class="text-xl">📝</span>
             <span><strong>Pré-visualização</strong> — este artigo ainda está como rascunho e não aparece no blog.</span>
@@ -90,7 +91,10 @@ new #[Layout('layouts.blog')] class extends Component {
             Editar / Publicar →
         </a>
     </div>
-    @endif
+</div>
+@endif
+
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-12 items-start">
     
     <!-- Conteúdo Principal -->
     <div class="min-w-0 w-full">
@@ -305,4 +309,5 @@ new #[Layout('layouts.blog')] class extends Component {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
     </style>
+</div>
 </div>

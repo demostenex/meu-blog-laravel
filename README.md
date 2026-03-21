@@ -4,11 +4,15 @@ Este é um blog pessoal completo e moderno, construído com **Laravel 11**, **Li
 
 ## Funcionalidades Principais
 - 🚀 **Painel Administrativo:** Área restrita para criar, editar e excluir artigos.
-- 📝 **Editor Trix:** Editor de texto rico (WYSIWYG) ideal para copiar e colar formatações complexas (Twitter, Word).
+- 📝 **Editor Trix:** Editor de texto rico (WYSIWYG) ideal para copiar e colar formatações complexas (Twitter, Word). Toolbar flutuante durante a edição.
+- 📋 **Rascunho e Pré-visualização:** Salve artigos como rascunho, pré-visualize como o leitor vai ver e publique quando estiver pronto.
 - 🧑‍💻 **Highlight.js:** Realce automático de sintaxe para blocos de código (perfeito para blogs de tecnologia).
 - 🎨 **Design Moderno:** Listagem limpa agrupada por mês/ano, sumário dinâmico ("Nesta Página") nos artigos longos e barra de busca global.
 - 🌓 **Modo Escuro:** Suporte nativo e fluido a Light/Dark mode.
 - 💬 **Comentários:** Integração ponta a ponta com **Disqus**.
+- 🤖 **IA Comentarista:** Bot Gemini AI com persona configurável que lê cada artigo e publica um comentário automático com personalidade.
+- 📊 **Dashboard:** Contador de visualizações, total de posts e ranking dos mais lidos.
+- 🔍 **SEO 100/100:** Meta tags completas (title, description, canonical, OG, Twitter Cards, JSON-LD), Lighthouse passando com 100 pontos.
 
 ---
 

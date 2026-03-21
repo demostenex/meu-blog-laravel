@@ -109,3 +109,41 @@ Implementação de um bot de IA que lê cada artigo e publica um comentário aut
 
 ---
 *Assinado: Copilot CLI & Demóstenes*
+
+---
+
+## 📅 Sessão: 21 de Março de 2026 (tarde)
+
+### 🐛 Fix: Menu duplo no Dashboard + ComponentNotFoundException
+
+O dashboard usava `<x-app-layout>` diretamente no template, mas o Livewire/Volt já aplica automaticamente o layout `layouts.app` (configurado em `config/livewire.php`). Resultado: duas navbars empilhadas.
+
+**Solução:** arquivo movido de `resources/views/dashboard.blade.php` → `resources/views/livewire/dashboard.blade.php` (caminho que o Volt procura) e `<x-app-layout>` substituído por `<div>` + `<x-slot name="header">`, seguindo o padrão dos demais componentes admin.
+
+---
+
+### 🔐 Rascunho e Pré-visualização de Artigos
+
+Implementado sistema completo de rascunho com pré-visualização antes de publicar.
+
+#### Decisão de arquitetura
+Campo `published_at` (timestamp nullable) na tabela `posts`:
+- `null` → rascunho (invisível para visitantes)
+- preenchido → publicado (exibido na homepage pela data de publicação)
+
+Posts já existentes migrados automaticamente com `published_at = created_at`.
+
+#### O que foi criado / alterado
+1. **Migration `add_published_at_to_posts_table`** — nova coluna + backfill dos posts existentes.
+2. **Model `Post`** — campo adicionado ao `#[Fillable]`, cast para `datetime`, scope `scopePublished()`, método `isPublished()`.
+3. **Criar artigo (`posts/create`)** — dois botões: **Publicar** e **💾 Salvar Rascunho**. Ao salvar rascunho, redireciona direto para a edição.
+4. **Editar artigo (`posts/edit`)** — badge de status no header (✅ Publicado / 📝 Rascunho), link **Visualizar** (nova aba), botões contextuais: se rascunho → *Publicar* + *Salvar*; se publicado → *Salvar Alterações* + *Voltar para Rascunho*.
+5. **Lista de artigos (`posts/index`)** — nova coluna de status com badges, botão **Publicar** rápido para rascunhos, link **Ver** em nova aba.
+6. **Homepage** — agora usa `Post::published()` — só exibe posts publicados.
+7. **Página do artigo (`posts/show`)** — rascunhos retornam 404 para visitantes; o dono vê um banner amarelo de pré-visualização com link direto para editar/publicar. Banner colocado fora do grid de artigo para não quebrar o layout de duas colunas (artigo + sumário).
+
+#### Desafio: múltiplos elementos raiz no Livewire
+O banner de rascunho inicialmente foi colocado como primeiro filho do grid (`col-span-full`), o que deslocou o conteúdo principal para a coluna do sumário. O Livewire também exige um único elemento raiz no componente. Solução: todo o componente `show.blade.php` envolvido em um único `<div>`, com o banner posicionado antes do grid (fora dele).
+
+---
+*Assinado: Copilot CLI & Demóstenes*
