@@ -117,7 +117,17 @@ new #[Layout('layouts.blog')] class extends Component {
                 #article-content p { margin-bottom: 1.5rem; }
             </style>
             <div id="article-content" class="trix-content text-gray-800 dark:text-gray-200 leading-relaxed text-base sm:text-lg selection:bg-blue-100 dark:selection:bg-blue-900">
-                {!! $post->content !!}
+                {!! preg_replace_callback(
+                    '/<a(\s[^>]*)href="(https?:\/\/[^"]+)"([^>]*)>([\s\S]*?)<\/a>/i',
+                    function($m) {
+                        $innerText = trim(strip_tags($m[4]));
+                        $href = $m[2];
+                        $needsLabel = preg_match('#^https?://#i', $innerText);
+                        $label = $needsLabel ? ' aria-label="' . htmlspecialchars(parse_url($href, PHP_URL_HOST) ?: $href) . '"' : '';
+                        return '<a' . $m[1] . 'href="' . $href . '"' . $m[3] . $label . '>' . $m[4] . '</a>';
+                    },
+                    $post->content
+                ) !!}
             </div>
         </article>
 
@@ -167,11 +177,11 @@ new #[Layout('layouts.blog')] class extends Component {
     <!-- Barra Lateral (Sumário Dinâmico) -->
     <aside class="hidden lg:block sticky top-28 self-start z-20 w-72">
         <div class="max-h-[calc(100vh-10rem)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                 <span class="w-8 h-px bg-gray-200 dark:bg-gray-800"></span>
                 Nesta Página
-            </h3>
-            <nav>
+            </p>
+            <nav aria-label="Índice do artigo">
                 <ul id="toc-list" class="space-y-4 text-xs font-medium text-gray-500 dark:text-gray-400 border-l border-gray-100 dark:border-gray-800">
                     <!-- Gerado via JavaScript -->
                 </ul>
@@ -224,7 +234,7 @@ new #[Layout('layouts.blog')] class extends Component {
                 li.className = '-ml-px border-l border-transparent hover:border-blue-500 transition-colors';
                 
                 const a = document.createElement('a');
-                a.href = '#' + id;
+                a.href = location.pathname + '#' + id;
                 a.innerText = heading.innerText;
                 a.className = 'pl-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block line-clamp-2 leading-tight py-0.5';
                 
