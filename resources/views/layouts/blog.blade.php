@@ -5,13 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Blog') }}</title>
-
         <!-- Meta Tags / SEO -->
-        @php $blogOwner = App\Models\User::select('blog_description')->first(); @endphp
         <meta name="robots" content="index, follow">
-        <link rel="canonical" href="{{ url()->current() }}">
-        <meta name="description" content="{{ $blogOwner?->blog_description ?: config('app.name') . ' - Blog.' }}">
+        @stack('seo_head')
         @stack('meta')
 
         <!-- Favicon -->

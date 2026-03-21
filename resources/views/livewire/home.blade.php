@@ -24,6 +24,13 @@ new #[Layout('layouts.blog')] class extends Component {
     }
 }; ?>
 
+@push('seo_head')
+    @php $blogOwner = App\Models\User::select('name', 'blog_description')->first(); @endphp
+    <title>{{ config('app.name', 'Blog') }}</title>
+    <meta name="description" content="{{ $blogOwner?->blog_description ?: config('app.name') . ' - Blog.' }}">
+    <link rel="canonical" href="{{ url('/') }}">
+@endpush
+
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <!-- Cabeçalho -->
     <header class="mb-16">

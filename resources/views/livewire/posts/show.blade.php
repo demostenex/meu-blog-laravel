@@ -17,11 +17,15 @@ new #[Layout('layouts.blog')] class extends Component {
     }
 }; ?>
 
-@push('meta')
-    @php $description = Str::limit(strip_tags($post->content), 160); @endphp
+@php $description = Str::limit(strip_tags($post->content), 160); @endphp
+
+@push('seo_head')
     <title>{{ $post->title }} - {{ config('app.name') }}</title>
     <meta name="description" content="{{ $description }}">
     <link rel="canonical" href="{{ route('posts.show', $post->slug) }}">
+@endpush
+
+@push('meta')
     <meta property="og:title" content="{{ $post->title }}">
     <meta property="og:description" content="{{ $description }}">
     <meta property="og:type" content="article">

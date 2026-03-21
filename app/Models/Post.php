@@ -26,6 +26,6 @@ class Post extends Model
 
     public function incrementViews(): void
     {
-        $this->incrementWithoutTouching('views_count');
+        static::withoutTimestamps(fn() => $this->increment('views_count'));
     }
 }

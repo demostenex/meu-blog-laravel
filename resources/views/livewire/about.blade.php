@@ -13,6 +13,12 @@ new #[Layout('layouts.blog')] class extends Component {
     }
 }; ?>
 
+@push('seo_head')
+    <title>{{ $user->name }} - {{ config('app.name') }}</title>
+    <meta name="description" content="Autor: {{ $user->name }}. Artigos e publicações em {{ config('app.name') }}.">
+    <link rel="canonical" href="{{ route('author.show', $user) }}">
+@endpush
+
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <!-- Botão Voltar Mais Elegante (Topo) -->
     <div class="mb-8">
