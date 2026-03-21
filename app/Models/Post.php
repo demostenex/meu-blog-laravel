@@ -13,4 +13,14 @@ class Post extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function aiComments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AiComment::class);
+    }
+
+    public function latestAiComment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AiComment::class)->latestOfMany();
+    }
 }

@@ -90,6 +90,25 @@ new #[Layout('layouts.blog')] class extends Component {
                 <a href="/" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">&larr; Voltar para a página inicial</a>
             </div>
 
+            <!-- Comentário da IA -->
+            @if($post->latestAiComment)
+                @php $aiComment = $post->latestAiComment; $aiUser = $post->user; @endphp
+                <div class="mb-12 rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        @if($aiUser->gemini_ai_photo)
+                            <img src="{{ asset('storage/' . $aiUser->gemini_ai_photo) }}" class="w-10 h-10 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
+                        @else
+                            <div class="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-xl">🤖</div>
+                        @endif
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $aiUser->gemini_ai_name ?: 'BOT Sarcástico' }}</p>
+                            <p class="text-xs text-gray-400">Opinião não solicitada &bull; <span class="italic">powered by {{ $aiComment->model }}</span></p>
+                        </div>
+                    </div>
+                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{{ $aiComment->content }}</div>
+                </div>
+            @endif
+
             <!-- Seção de Comentários Disqus -->
             <div id="disqus_thread" class="mt-12"></div>
             <script>
