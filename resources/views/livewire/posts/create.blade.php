@@ -10,14 +10,24 @@ new class extends Component {
     public $title = '';
     public $content = '';
     public $cover_image;
+    public $trixImage = null;
 
     public function rules()
     {
         return [
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'title'      => 'required|string|max:255',
+            'content'    => 'required|string',
             'cover_image' => 'nullable|image|max:2048',
+            'trixImage'  => 'nullable|image|max:5120',
         ];
+    }
+
+    public function storeTrixImage(): void
+    {
+        $this->validate(['trixImage' => 'required|image|max:5120']);
+        $path = $this->trixImage->store('post-images', 'public');
+        $this->dispatch('trix-image-ready', url: asset('storage/' . $path));
+        $this->trixImage = null;
     }
 
     private function storePost(bool $publish): \App\Models\Post
@@ -188,5 +198,51 @@ new class extends Component {
             window.addEventListener('scroll', update, { passive: true });
             window.addEventListener('resize', update, { passive: true });
         });
+
+        // Upload de imagens inline no Trix via Livewire
+        (function () {
+            let pendingAttachment = null;
+
+            document.addEventListener('trix-attachment-add', function (event) {
+                const attachment = event.attachment;
+                if (!attachment.file) return;
+
+                console.log('[Trix] arquivo detectado:', attachment.file.name);
+                pendingAttachment = attachment;
+                attachment.setUploadProgress(0);
+
+                const wireEl = document.querySelector('trix-editor')?.closest('[wire\\:id]');
+                if (!wireEl) { console.warn('[Trix] wire:id não encontrado'); return; }
+                const component = Livewire.find(wireEl.getAttribute('wire:id'));
+                if (!component) { console.warn('[Trix] componente Livewire não encontrado'); return; }
+
+                component.upload(
+                    'trixImage',
+                    attachment.file,
+                    () => {
+                        console.log('[Trix] upload concluído, chamando storeTrixImage');
+                        component.call('storeTrixImage');
+                    },
+                    () => {
+                        console.warn('[Trix] erro no upload');
+                        pendingAttachment = null;
+                    },
+                    (progressEvent) => {
+                        const progress = progressEvent?.detail?.progress
+                            ?? (progressEvent?.total ? Math.round(progressEvent.loaded / progressEvent.total * 100) : 0);
+                        attachment.setUploadProgress(progress);
+                    }
+                );
+            });
+
+            window.addEventListener('trix-image-ready', (event) => {
+                console.log('[Trix] trix-image-ready recebido', event.detail);
+                const url = event.detail?.url;
+                if (pendingAttachment && url) {
+                    pendingAttachment.setAttributes({ url, href: url });
+                    pendingAttachment = null;
+                }
+            });
+        })();
     </script>
 </div>

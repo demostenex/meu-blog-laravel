@@ -161,8 +161,23 @@ new #[Layout('layouts.blog')] class extends Component {
 
             <!-- Comentário da IA -->
             @if($post->latestAiComment)
-                @php $aiComment = $post->latestAiComment; $aiUser = $post->user; @endphp
-                <div class="mb-12 rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 p-6">
+                @php
+                    $aiComment = $post->latestAiComment;
+                    $aiUser = $post->user;
+                    $hex = ltrim($aiUser->gemini_accent_color ?? '#7c3aed', '#');
+                    [$r, $g, $b] = array_map('hexdec', str_split($hex, 2));
+                    $bgStyle     = "rgba($r,$g,$b,0.07)";
+                    $borderStyle = "rgba($r,$g,$b,0.35)";
+                    $accentColor = '#' . $hex;
+                    $aiName      = $aiUser->gemini_ai_name ?: 'BOT Sarcástico';
+                    $aiPhoto     = $aiUser->gemini_ai_photo ? asset('storage/' . $aiUser->gemini_ai_photo) : '';
+                @endphp
+                <div id="ai-comment-section"
+                     data-ai-name="{{ $aiName }}"
+                     data-ai-photo="{{ $aiPhoto }}"
+                     data-ai-accent="{{ $accentColor }}"
+                     style="background-color:{{ $bgStyle }};border-color:{{ $borderStyle }};scroll-margin-top:6rem"
+                     class="mb-12 rounded-2xl border p-6">
                     <div class="flex items-center gap-3 mb-4">
                         @if($aiUser->gemini_ai_photo)
                             <img src="{{ asset('storage/' . $aiUser->gemini_ai_photo) }}" class="w-10 h-10 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
@@ -239,6 +254,10 @@ new #[Layout('layouts.blog')] class extends Component {
             
             if (headings.length === 0) {
                 tocList.innerHTML = '<li class="italic text-gray-400 text-xs">Nenhum sumário disponível.</li>';
+
+                // Mesmo sem seções, mostra o link da IA se existir
+                const aiSection = document.getElementById('ai-comment-section');
+                if (aiSection) appendAiTocItem();
                 return;
             }
 
@@ -270,6 +289,46 @@ new #[Layout('layouts.blog')] class extends Component {
                 li.appendChild(a);
                 tocList.appendChild(li);
             });
+
+            // Adiciona link para o comentário da IA no final do sumário
+            function appendAiTocItem() {
+                const aiSection = document.getElementById('ai-comment-section');
+                const aiName    = aiSection.dataset.aiName  || '🤖 Opinião da IA';
+                const aiPhoto   = aiSection.dataset.aiPhoto || '';
+                const aiAccent  = aiSection.dataset.aiAccent || '#7c3aed';
+
+                const divider = document.createElement('li');
+                divider.className = 'border-t border-gray-100 dark:border-gray-800 pt-3 mt-3 -ml-px';
+
+                const a = document.createElement('a');
+                a.href = location.pathname + '#ai-comment-section';
+                a.style.color = aiAccent;
+                a.className = 'pl-4 hover:opacity-75 transition-opacity flex items-center gap-2 leading-tight py-0.5 font-semibold';
+
+                if (aiPhoto) {
+                    const img = document.createElement('img');
+                    img.src = aiPhoto;
+                    img.className = 'w-5 h-5 rounded-full object-cover shrink-0';
+                    img.alt = aiName;
+                    a.appendChild(img);
+                } else {
+                    const emoji = document.createElement('span');
+                    emoji.textContent = '🤖';
+                    a.appendChild(emoji);
+                }
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = aiName;
+                nameSpan.className = 'line-clamp-1';
+                a.appendChild(nameSpan);
+
+                divider.appendChild(a);
+                tocList.appendChild(divider);
+            }
+
+            if (document.getElementById('ai-comment-section')) {
+                appendAiTocItem();
+            }
         });
     </script>
 
@@ -278,6 +337,7 @@ new #[Layout('layouts.blog')] class extends Component {
         .trix-content h1 { font-size: 2.5rem; font-weight: 800; margin: 2rem 0 1rem; color: var(--tw-prose-headings); scroll-margin-top: 6rem; }
         .trix-content h2 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; scroll-margin-top: 6rem; }
         .trix-content h3 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; scroll-margin-top: 6rem; }
+        #ai-comment-section { scroll-margin-top: 6rem; }
         .trix-content p { margin-bottom: 1.5rem; line-height: 1.8; }
         .trix-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; }
         .trix-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.5rem; }

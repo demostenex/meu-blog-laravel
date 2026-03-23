@@ -24,6 +24,7 @@ new class extends Component
     public string $gemini_model = 'gemini-2.0-flash';
     public string $gemini_ai_name = '';
     public string $gemini_persona = '';
+    public string $gemini_accent_color = '#7c3aed';
     public $gemini_ai_photo;
 
     /**
@@ -39,6 +40,7 @@ new class extends Component
         $this->gemini_model = Auth::user()->gemini_model ?? 'gemini-2.0-flash';
         $this->gemini_ai_name = Auth::user()->gemini_ai_name ?? '';
         $this->gemini_persona = Auth::user()->gemini_persona ?? '';
+        $this->gemini_accent_color = Auth::user()->gemini_accent_color ?? '#7c3aed';
     }
 
     /**
@@ -59,6 +61,7 @@ new class extends Component
             'gemini_model' => ['nullable', 'string', 'max:100'],
             'gemini_ai_name' => ['nullable', 'string', 'max:100'],
             'gemini_persona' => ['nullable', 'string', 'max:5000'],
+            'gemini_accent_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'gemini_ai_photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
@@ -71,6 +74,7 @@ new class extends Component
             'gemini_model' => $validated['gemini_model'] ?? 'gemini-2.0-flash',
             'gemini_ai_name' => $validated['gemini_ai_name'],
             'gemini_persona' => $validated['gemini_persona'],
+            'gemini_accent_color' => $validated['gemini_accent_color'] ?? '#7c3aed',
         ]);
 
         if ($this->photo) {
@@ -237,6 +241,18 @@ new class extends Component
                 <x-input-error class="mt-2" :messages="$errors->get('gemini_ai_name')" />
             </div>
 
+            <!-- Cor de destaque -->
+            <div>
+                <x-input-label for="gemini_accent_color" :value="__('Cor do bloco de comentário')" />
+                <div class="flex items-center gap-3 mt-1">
+                    <input type="color" wire:model="gemini_accent_color" id="gemini_accent_color"
+                        class="h-10 w-14 rounded-md border border-gray-300 dark:border-gray-700 cursor-pointer p-0.5 bg-white dark:bg-gray-900" />
+                    <span class="text-sm text-gray-500 dark:text-gray-400 font-mono" x-text="$wire.gemini_accent_color"></span>
+                </div>
+                <x-input-error class="mt-2" :messages="$errors->get('gemini_accent_color')" />
+            </div>
+        </div>
+
             <!-- Modelo -->
             <div>
                 <x-input-label for="gemini_model" :value="__('Modelo Gemini')" />
@@ -249,7 +265,6 @@ new class extends Component
                 </select>
                 <x-input-error class="mt-2" :messages="$errors->get('gemini_model')" />
             </div>
-        </div>
 
         <!-- API Key -->
         <div>
@@ -280,7 +295,7 @@ new class extends Component
         <!-- Persona -->
         <div>
             <x-input-label for="gemini_persona" :value="__('Persona da IA')" />
-            <textarea wire:model="gemini_persona" id="gemini_persona" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" rows="5" placeholder="Ex: Você é um crítico literário extremamente sarcástico que acha tudo óbvio e já visto. Comente o artigo com ironia e humor ácido, mas sem ser ofensivo..."></textarea>
+            <textarea wire:model="gemini_persona" id="gemini_persona" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" rows="5" placeholder="Ex: Você é um crítico literário sarcástico. Comente o artigo com ironia e humor, mas sem ser ofensivo...">{{ $gemini_persona }}</textarea>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Descreva como a IA deve se comportar ao comentar seus posts.</p>
             <x-input-error class="mt-2" :messages="$errors->get('gemini_persona')" />
         </div>
