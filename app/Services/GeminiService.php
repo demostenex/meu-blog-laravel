@@ -17,7 +17,7 @@ class GeminiService
         $model = $post->user->gemini_model ?? 'gemini-2.0-flash';
         $apiKey = $post->user->gemini_api_key;
 
-        $articleText = strip_tags($post->content);
+        $articleText = \Str::limit(strip_tags($post->content), 8000);
 
         $prompt = <<<PROMPT
 {$persona}
@@ -31,7 +31,7 @@ Conteúdo:
 PROMPT;
 
         $response = Http::withoutVerifying()
-            ->timeout(30)
+            ->timeout(120)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
                 'contents' => [
                     ['parts' => [['text' => $prompt]]],
