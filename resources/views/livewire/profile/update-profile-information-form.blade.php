@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\ImageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -81,19 +82,23 @@ new class extends Component
             if ($user->profile_photo_path) {
                 Storage::disk('public')->delete($user->profile_photo_path);
             }
-            $user->profile_photo_path = $this->photo->store('profiles', 'public');
+            $user->profile_photo_path = app(ImageService::class)->storeCompressed($this->photo, 'profiles', 400, 400, 85);
         }
 
         if ($this->favicon) {
-            // Salva como favicon.png na pasta pública para facilitar
-            $this->favicon->storeAs('', 'favicon.png', 'public');
+            // Favicon salvo como PNG (formato esperado pelo navegador)
+            $encoded = (new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver()))
+                ->read($this->favicon->getRealPath())
+                ->scaleDown(256, 256)
+                ->toPng();
+            Storage::disk('public')->put('favicon.png', (string) $encoded);
         }
 
         if ($this->gemini_ai_photo) {
             if ($user->gemini_ai_photo) {
                 Storage::disk('public')->delete($user->gemini_ai_photo);
             }
-            $user->gemini_ai_photo = $this->gemini_ai_photo->store('ai-avatars', 'public');
+            $user->gemini_ai_photo = app(ImageService::class)->storeCompressed($this->gemini_ai_photo, 'ai-avatars', 400, 400, 85);
         }
 
         if ($user->isDirty('email')) {

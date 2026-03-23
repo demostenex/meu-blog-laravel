@@ -26,7 +26,7 @@ Você tem duas opções para hospedar este blog na internet: a forma **Pura** (i
 
 Esta é a opção tradicional, ideal para servidores compartilhados ou se você usa o Laravel Forge.
 
-**1. Requisitos:** PHP 8.2+, Servidor Web (Nginx/Apache), Composer, Node.js e um Banco de Dados (PostgreSQL/MySQL).
+**1. Requisitos:** PHP 8.2+ com extensões GD (libjpeg + libwebp), Servidor Web (Nginx/Apache), Composer, Node.js e um Banco de Dados (PostgreSQL/MySQL).
 
 **2. Instalação:**
 ```bash

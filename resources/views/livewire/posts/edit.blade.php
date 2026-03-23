@@ -5,6 +5,7 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
 use App\Models\Post;
 use App\Services\GeminiService;
+use App\Services\ImageService;
 use Illuminate\Support\Facades\Storage;
 
 new class extends Component {
@@ -44,7 +45,7 @@ new class extends Component {
     public function storeTrixImage(): void
     {
         $this->validate(['trixImage' => 'required|image|max:5120']);
-        $path = $this->trixImage->store('post-images', 'public');
+        $path = app(ImageService::class)->storeCompressed($this->trixImage, 'post-images', 1200, 1200, 80);
         $this->dispatch('trix-image-ready', url: asset('storage/' . $path));
         $this->trixImage = null;
     }
@@ -59,7 +60,7 @@ new class extends Component {
             if ($this->existing_cover_image) {
                 Storage::disk('public')->delete($this->existing_cover_image);
             }
-            $imagePath = $this->cover_image->store('covers', 'public');
+            $imagePath = app(ImageService::class)->storeCompressed($this->cover_image, 'covers', 1920, 1080);
         }
 
         $this->post->update([

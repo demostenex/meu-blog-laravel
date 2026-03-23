@@ -3,6 +3,7 @@
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
+use App\Services\ImageService;
 
 new class extends Component {
     use WithFileUploads;
@@ -25,7 +26,7 @@ new class extends Component {
     public function storeTrixImage(): void
     {
         $this->validate(['trixImage' => 'required|image|max:5120']);
-        $path = $this->trixImage->store('post-images', 'public');
+        $path = app(ImageService::class)->storeCompressed($this->trixImage, 'post-images', 1200, 1200, 80);
         $this->dispatch('trix-image-ready', url: asset('storage/' . $path));
         $this->trixImage = null;
     }
@@ -36,7 +37,7 @@ new class extends Component {
 
         $imagePath = null;
         if ($this->cover_image) {
-            $imagePath = $this->cover_image->store('covers', 'public');
+            $imagePath = app(ImageService::class)->storeCompressed($this->cover_image, 'covers', 1920, 1080);
         }
 
         return auth()->user()->posts()->create([
