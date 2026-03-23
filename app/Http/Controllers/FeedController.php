@@ -16,6 +16,7 @@ class FeedController extends Controller
 
         return response()
             ->view('feed', compact('posts'))
-            ->header('Content-Type', 'application/rss+xml; charset=UTF-8');
+            ->header('Content-Type', 'application/rss+xml; charset=UTF-8')
+            ->header('Content-Disposition', 'inline');
     }
 }
