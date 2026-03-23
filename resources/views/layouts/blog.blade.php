@@ -13,6 +13,9 @@
         <!-- Favicon -->
         <link rel="icon" type="image/png" href="{{ asset('storage/favicon.png') }}?v={{ time() }}">
 
+        <!-- Feed RSS (autodiscovery) -->
+        <link rel="alternate" type="application/rss+xml" title="{{ config('app.name') }}" href="{{ route('feed') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
@@ -67,6 +70,11 @@
                             <a href="{{ route('login') }}" class="text-sm font-semibold text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition">Entrar</a>
                         @endauth
                         
+                        <!-- RSS -->
+                        <a href="{{ route('feed') }}" title="Feed RSS" class="p-2 rounded-md text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all duration-300">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M3.75 3a.75.75 0 0 0 0 1.5c6.213 0 11.25 5.037 11.25 11.25a.75.75 0 0 0 1.5 0C16.5 8.755 10.745 3 3.75 3ZM3.75 8.5a.75.75 0 0 0 0 1.5 5.25 5.25 0 0 1 5.25 5.25.75.75 0 0 0 1.5 0A6.75 6.75 0 0 0 3.75 8.5ZM3.75 14a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Z"/></svg>
+                        </a>
+
                         <!-- Theme Toggle Button Public -->
                         <button @click="darkMode = !darkMode; localStorage.theme = darkMode ? 'dark' : 'light'; if(darkMode) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); }" class="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none transition-all duration-300" title="Alternar Tema">
                             <!-- Ícone Lua (Modo Escuro) -->
