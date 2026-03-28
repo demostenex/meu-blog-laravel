@@ -5,13 +5,13 @@ namespace Tests\Feature\Posts;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\ImagenService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Livewire\Volt\Volt;
 use Tests\TestCase;
 
 class GenerateAiCoverTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     private User $user;
 
