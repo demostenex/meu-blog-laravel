@@ -35,4 +35,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Post::class);
     }
+
+    public function getRouteKey(): string
+    {
+        return \Illuminate\Support\Str::slug($this->name);
+    }
+
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        return static::first();
+    }
 }
