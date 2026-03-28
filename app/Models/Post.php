@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['user_id', 'title', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'published_at', 'views_count'])]
 class Post extends Model
 {
+    use HasFactory;
+
     protected $casts = [
         'published_at'           => 'datetime',
         'cover_image_use_content' => 'boolean',
