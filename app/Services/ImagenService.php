@@ -16,7 +16,7 @@ class ImagenService
         $apiKey = $user->gemini_api_key;
         $prompt = $this->buildPrompt($post, $user);
 
-        $response = Http::withoutVerifying()
+        $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
             ->timeout(120)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/" . self::MODEL . ":generateContent?key={$apiKey}", [
                 'contents'         => [['parts' => [['text' => $prompt]]]],

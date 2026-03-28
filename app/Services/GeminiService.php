@@ -30,7 +30,7 @@ Conteúdo:
 {$articleText}
 PROMPT;
 
-        $response = Http::withoutVerifying()
+        $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
             ->timeout(120)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
                 'contents' => [
