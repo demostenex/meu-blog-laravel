@@ -28,6 +28,20 @@ Além disso, resolvemos o pesadelo do *Mixed Content*. O site rodava em HTTPS, m
 ## 4. Trade-offs: O custo da liberdade
 Seja honesto: fazer tudo sozinho dá trabalho. Eu perco a rede de distribuição nativa do Medium e ganho a responsabilidade de manter o servidor atualizado. Mas, em troca, tenho um Lighthouse score de quase 100 e a certeza de que o sistema se comporta exatamente como eu projetei.
 
+## 5. O Bot que Lê o que Você Escreve (e Julga)
+Depois de tudo funcionando, surgiu uma pergunta: *e se o blog tivesse personalidade própria?* Integrei o **Gemini AI** como um comentarista automático. Mas não qualquer bot — uma maritaca chamada Kikito, com persona configurável, que lê cada artigo e publica um comentário sarcástico, opinativo e às vezes irritantemente obediente.
+
+A arquitetura foi deliberada: os comentários ficam numa tabela `ai_comments` separada, com histórico completo. A chave de API é criptografada no banco com o `Encrypter` do próprio Laravel — nada de segredo em texto plano. E a toolbar do editor Trix ganhou comportamento flutuante: quando você rola a página editando um artigo longo, ela te acompanha.
+
+> **Pitaco do Kikito (o bot):** *O campo `gemini_api_key` era `varchar(255)`. O token criptografado tem 360 caracteres. Solução óbvia: `text`. Às vezes o banco de dados é mais honesto que o programador.*
+
+## 6. Rascunho, Previsão e o Problema dos Dois Menus
+O sistema de rascunho parecia simples: um campo `published_at` nullable. Null = rascunho, preenchido = publicado. Na prática, revelou um bug dormindo há semanas no dashboard: o componente usava `<x-app-layout>` (que já inclui a navbar) **dentro** de um Volt component cujo Livewire aplica `layouts.app` automaticamente. Resultado: duas navbars empilhadas como um sanduíche mal-feito.
+
+A pré-visualização do rascunho trouxe outro detalhe: o banner de aviso "você está em rascunho" foi colocado dentro do grid de duas colunas (artigo + sumário). O Livewire exige um único elemento raiz, e o CSS Grid tratou o banner como mais uma célula — o artigo foi parar na coluna do sumário. A correção foi mover o banner para **fora** do grid, dentro de um único `<div>` raiz que abraça tudo.
+
+> **Pitaco do Copilot:** *`col-span-full` dentro de um grid com track customizado `[1fr_18rem]` não garante que os itens seguintes continuem na ordem esperada quando há um `@if` dinâmico. Envolva tudo num `<div>` e durma tranquilo.*
+
 ## Conclusão: O Código como Identidade
 O meu GitHub agora tem algo real. Não é um fork, não é um tutorial seguido às cegas. É um sistema que eu entendo de ponta a ponta. Usar a IA como copiloto me deu agilidade nas partes mecânicas (como as Meta Tags de Open Graph para o WhatsApp ficar bonito), mas a decisão arquitetural e a "alma" do blog continuam sendo minhas.
 

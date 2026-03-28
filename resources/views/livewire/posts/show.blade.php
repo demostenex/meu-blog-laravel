@@ -118,6 +118,7 @@ new #[Layout('layouts.blog')] class extends Component {
                         @endif
                         <span>Por <strong>{{ $post->user->name }}</strong></span>
                     </a>
+                    <x-social-links :user="$post->user" size="sm" />
                     <span>&bull;</span>
                     <time>{{ $post->created_at->format('d/m/Y') }}</time>
                 </div>

@@ -59,6 +59,9 @@ new #[Layout('layouts.blog')] class extends Component {
                             <p class="italic text-gray-400 text-center">O autor ainda não escreveu uma biografia.</p>
                         @endif
                     </div>
+                    <div class="flex justify-center mt-6">
+                        <x-social-links :user="$user" />
+                    </div>
                 </div>
             </div>
         </div>
