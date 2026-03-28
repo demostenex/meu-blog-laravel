@@ -11,6 +11,7 @@ Este é um blog pessoal completo e moderno, construído com **Laravel 11**, **Li
 - 🌓 **Modo Escuro:** Suporte nativo e fluido a Light/Dark mode.
 - 💬 **Comentários:** Integração ponta a ponta com **Disqus**.
 - 🤖 **IA Comentarista:** Bot Gemini AI com persona configurável que lê cada artigo e publica um comentário automático com personalidade.
+- 🎨 **Capa com IA (Nano Banana):** Geração automática de imagem de capa via **Google Gemini** (`gemini-3.1-flash-image-preview`). No painel de edição, descreva a imagem, opcionalmente inclua o conteúdo do artigo e/ou a bio do autor como contexto, e gere a capa com um clique. Usa a mesma chave de API do comentarista.
 - 📊 **Dashboard:** Contador de visualizações, total de posts e ranking dos mais lidos.
 - 🔍 **SEO 100/100:** Meta tags completas (title, description, canonical, OG, Twitter Cards, JSON-LD), Lighthouse passando com 100 pontos.
 

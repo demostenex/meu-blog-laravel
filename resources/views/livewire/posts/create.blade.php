@@ -4,6 +4,8 @@ use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
 use App\Services\ImageService;
+use App\Services\ImagenService;
+use Illuminate\Support\Facades\Storage;
 
 new class extends Component {
     use WithFileUploads;
@@ -12,6 +14,13 @@ new class extends Component {
     public $content = '';
     public $cover_image;
     public $trixImage = null;
+
+    public string $cover_image_prompt = '';
+    public bool $cover_image_use_content = false;
+    public bool $cover_image_use_bio = false;
+    public ?string $ai_generated_cover_path = null;
+    public bool $generatingCover = false;
+    public ?string $coverStatus = null;
 
     public function rules()
     {
@@ -38,15 +47,58 @@ new class extends Component {
         $imagePath = null;
         if ($this->cover_image) {
             $imagePath = app(ImageService::class)->storeCompressed($this->cover_image, 'covers', 1920, 1080);
+        } elseif ($this->ai_generated_cover_path) {
+            $imagePath = $this->ai_generated_cover_path;
         }
 
         return auth()->user()->posts()->create([
-            'title'        => $this->title,
-            'slug'         => Str::slug($this->title) . '-' . uniqid(),
-            'content'      => $this->content,
-            'cover_image'  => $imagePath,
-            'published_at' => $publish ? now() : null,
+            'title'                   => $this->title,
+            'slug'                    => Str::slug($this->title) . '-' . uniqid(),
+            'content'                 => $this->content,
+            'cover_image'             => $imagePath,
+            'cover_image_prompt'      => $this->cover_image_prompt ?: null,
+            'cover_image_use_content' => $this->cover_image_use_content,
+            'cover_image_use_bio'     => $this->cover_image_use_bio,
+            'published_at'            => $publish ? now() : null,
         ]);
+    }
+
+    public function generateAiCover(): void
+    {
+        $this->validate(['cover_image_prompt' => 'required|string|max:2000']);
+
+        $user = auth()->user();
+
+        if (! $user->gemini_api_key) {
+            $this->coverStatus = 'error:Configure a chave de API do Gemini no seu perfil primeiro.';
+            return;
+        }
+
+        $this->generatingCover = true;
+        $this->coverStatus = null;
+
+        try {
+            if ($this->ai_generated_cover_path) {
+                Storage::disk('public')->delete($this->ai_generated_cover_path);
+                $this->ai_generated_cover_path = null;
+            }
+
+            $tempPost = new \App\Models\Post([
+                'title'                   => $this->title ?: 'Artigo sem título',
+                'content'                 => $this->content,
+                'cover_image_prompt'      => $this->cover_image_prompt,
+                'cover_image_use_content' => $this->cover_image_use_content,
+                'cover_image_use_bio'     => $this->cover_image_use_bio,
+            ]);
+
+            $path = app(ImagenService::class)->generateCoverImage($tempPost, $user);
+            $this->ai_generated_cover_path = $path;
+            $this->coverStatus = 'success';
+        } catch (\Throwable $e) {
+            $this->coverStatus = 'error:' . $e->getMessage();
+        } finally {
+            $this->generatingCover = false;
+        }
     }
 
     public function save()
@@ -94,10 +146,73 @@ new class extends Component {
                             <div class="mt-2 mb-2">
                                 <img src="{{ $cover_image->temporaryUrl() }}" class="rounded-lg shadow-sm max-h-48 object-cover">
                             </div>
+                        @elseif ($ai_generated_cover_path)
+                            <div class="mt-2 mb-2">
+                                <span class="block text-sm text-gray-500 mb-1">Capa gerada pela IA:</span>
+                                <img src="{{ asset('storage/' . $ai_generated_cover_path) }}" class="rounded-lg shadow-sm max-h-48 object-cover">
+                            </div>
                         @endif
 
                         <input type="file" wire:model="cover_image" id="cover_image" class="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
                         <x-input-error class="mt-2" :messages="$errors->get('cover_image')" />
+                    </div>
+
+                    <!-- Gerador de Capa com IA -->
+                    <div class="border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 bg-indigo-50 dark:bg-indigo-950/30 space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🎨</span>
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Gerar capa com IA</h3>
+                        </div>
+
+                        <div>
+                            <x-input-label for="cover_image_prompt" :value="__('Descreva a imagem desejada *')" />
+                            <textarea
+                                wire:model="cover_image_prompt"
+                                id="cover_image_prompt"
+                                rows="3"
+                                placeholder="Ex: Um homem de costas olhando para um monitor com código, estilo cinematográfico, tons escuros..."
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder-gray-500 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 text-sm"
+                            ></textarea>
+                            <x-input-error class="mt-1" :messages="$errors->get('cover_image_prompt')" />
+                        </div>
+
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                <input type="checkbox" wire:model="cover_image_use_content" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                Incluir conteúdo do artigo no contexto
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                <input type="checkbox" wire:model="cover_image_use_bio" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                Incluir bio do autor no contexto
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button
+                                wire:click="generateAiCover"
+                                wire:loading.attr="disabled"
+                                wire:target="generateAiCover"
+                                type="button"
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
+                            >
+                                <span wire:loading.remove wire:target="generateAiCover">
+                                    {{ $ai_generated_cover_path ? '🔄 Regenerar capa' : '✨ Gerar capa' }}
+                                </span>
+                                <span wire:loading wire:target="generateAiCover" class="flex items-center gap-2">
+                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                    </svg>
+                                    Gerando...
+                                </span>
+                            </button>
+
+                            @if ($coverStatus === 'success')
+                                <span class="text-sm text-green-600 dark:text-green-400">✅ Capa gerada com sucesso!</span>
+                            @elseif ($coverStatus && str_starts_with($coverStatus, 'error:'))
+                                <span class="text-sm text-red-600 dark:text-red-400">❌ {{ str_replace('error:', '', $coverStatus) }}</span>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Editor de Texto (Trix) -->

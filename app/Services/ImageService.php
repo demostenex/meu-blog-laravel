@@ -47,6 +47,44 @@ class ImageService
     }
 
     /**
+     * Decodifica uma imagem em base64, comprime e armazena no disco 'public'.
+     *
+     * @param  string  $base64     Conteúdo da imagem em base64
+     * @param  string  $directory  Subdiretório dentro do disco 'public'
+     * @param  int     $maxWidth   Largura máxima em pixels
+     * @param  int     $maxHeight  Altura máxima em pixels
+     * @param  int     $quality    Qualidade de 1-100
+     * @return string Caminho relativo salvo no disco 'public'
+     */
+    public function storeFromBase64(
+        string $base64,
+        string $directory,
+        int $maxWidth = 1920,
+        int $maxHeight = 1080,
+        int $quality = 82
+    ): string {
+        $imageData = base64_decode($base64);
+
+        $tmpPath = sys_get_temp_dir() . '/' . Str::uuid() . '.png';
+        file_put_contents($tmpPath, $imageData);
+
+        try {
+            $image = $this->manager->read($tmpPath);
+            $image->scaleDown($maxWidth, $maxHeight);
+
+            $filename = Str::uuid() . '.webp';
+            $path     = $directory . '/' . $filename;
+            $encoded  = $image->toWebp($quality);
+
+            Storage::disk('public')->put($path, (string) $encoded);
+        } finally {
+            @unlink($tmpPath);
+        }
+
+        return $path;
+    }
+
+    /**
      * Comprime uma imagem já salva no disco 'public', mantendo o mesmo caminho.
      * Converte para WebP se a extensão original for jpg/jpeg/png.
      * Retorna o novo caminho (pode ter extensão diferente).

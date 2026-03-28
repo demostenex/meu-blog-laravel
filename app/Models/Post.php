@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'title', 'slug', 'cover_image', 'content', 'published_at', 'views_count'])]
+#[Fillable(['user_id', 'title', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'published_at', 'views_count'])]
 class Post extends Model
 {
     protected $casts = [
-        'published_at' => 'datetime',
+        'published_at'           => 'datetime',
+        'cover_image_use_content' => 'boolean',
+        'cover_image_use_bio'     => 'boolean',
     ];
 
     public function isPublished(): bool

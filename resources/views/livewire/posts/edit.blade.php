@@ -5,6 +5,7 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
 use App\Models\Post;
 use App\Services\GeminiService;
+use App\Services\ImagenService;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,6 +20,12 @@ new class extends Component {
     public $existing_cover_image;
     public $trixImage = null;
 
+    public string $cover_image_prompt = '';
+    public bool $cover_image_use_content = false;
+    public bool $cover_image_use_bio = false;
+    public bool $generatingCover = false;
+    public ?string $coverStatus = null;
+
     public bool $generatingComment = false;
     public ?string $commentStatus = null;
 
@@ -30,6 +37,9 @@ new class extends Component {
         $this->title = $post->title;
         $this->content = $post->content;
         $this->existing_cover_image = $post->cover_image;
+        $this->cover_image_prompt = $post->cover_image_prompt ?? '';
+        $this->cover_image_use_content = (bool) $post->cover_image_use_content;
+        $this->cover_image_use_bio = (bool) $post->cover_image_use_bio;
     }
 
     public function rules()
@@ -64,9 +74,12 @@ new class extends Component {
         }
 
         $this->post->update([
-            'title'       => $this->title,
-            'content'     => $this->content,
-            'cover_image' => $imagePath,
+            'title'                   => $this->title,
+            'content'                 => $this->content,
+            'cover_image'             => $imagePath,
+            'cover_image_prompt'      => $this->cover_image_prompt ?: null,
+            'cover_image_use_content' => $this->cover_image_use_content,
+            'cover_image_use_bio'     => $this->cover_image_use_bio,
         ]);
     }
 
@@ -91,6 +104,46 @@ new class extends Component {
         $this->post->update(['published_at' => $this->post->published_at ?? now()]);
         session()->flash('status', 'Artigo publicado com sucesso!');
         $this->redirectRoute('posts.index', navigate: true);
+    }
+
+    public function generateAiCover(): void
+    {
+        $this->validate(['cover_image_prompt' => 'required|string|max:2000']);
+
+        $user = auth()->user();
+
+        if (! $user->gemini_api_key) {
+            $this->coverStatus = 'error:Configure a chave de API do Gemini no seu perfil primeiro.';
+            return;
+        }
+
+        $this->generatingCover = true;
+        $this->coverStatus = null;
+
+        try {
+            $this->post->update([
+                'cover_image_prompt'      => $this->cover_image_prompt,
+                'cover_image_use_content' => $this->cover_image_use_content,
+                'cover_image_use_bio'     => $this->cover_image_use_bio,
+            ]);
+            $this->post->refresh();
+
+            if ($this->existing_cover_image) {
+                Storage::disk('public')->delete($this->existing_cover_image);
+            }
+
+            $path = app(ImagenService::class)->generateCoverImage($this->post, $user);
+
+            $this->post->update(['cover_image' => $path]);
+            $this->post->refresh();
+            $this->existing_cover_image = $path;
+            $this->cover_image = null;
+            $this->coverStatus = 'success';
+        } catch (\Throwable $e) {
+            $this->coverStatus = 'error:' . $e->getMessage();
+        } finally {
+            $this->generatingCover = false;
+        }
     }
 
     public function generateAiComment()
@@ -174,6 +227,64 @@ new class extends Component {
 
                         <input type="file" wire:model="cover_image" id="cover_image" class="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
                         <x-input-error class="mt-2" :messages="$errors->get('cover_image')" />
+                    </div>
+
+                    <!-- Gerador de Capa com IA -->
+                    <div class="border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 bg-indigo-50 dark:bg-indigo-950/30 space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🎨</span>
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Gerar capa com IA</h3>
+                        </div>
+
+                        <div>
+                            <x-input-label for="cover_image_prompt" :value="__('Descreva a imagem desejada *')" />
+                            <textarea
+                                wire:model="cover_image_prompt"
+                                id="cover_image_prompt"
+                                rows="3"
+                                placeholder="Ex: Um homem de costas olhando para um monitor com código, estilo cinematográfico, tons escuros..."
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder-gray-500 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 text-sm"
+                            ></textarea>
+                            <x-input-error class="mt-1" :messages="$errors->get('cover_image_prompt')" />
+                        </div>
+
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                <input type="checkbox" wire:model="cover_image_use_content" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                Incluir conteúdo do artigo no contexto
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                <input type="checkbox" wire:model="cover_image_use_bio" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                Incluir bio do autor no contexto
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button
+                                wire:click="generateAiCover"
+                                wire:loading.attr="disabled"
+                                wire:target="generateAiCover"
+                                type="button"
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
+                            >
+                                <span wire:loading.remove wire:target="generateAiCover">
+                                    {{ $existing_cover_image ? '🔄 Regenerar capa' : '✨ Gerar capa' }}
+                                </span>
+                                <span wire:loading wire:target="generateAiCover" class="flex items-center gap-2">
+                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                    </svg>
+                                    Gerando...
+                                </span>
+                            </button>
+
+                            @if ($coverStatus === 'success')
+                                <span class="text-sm text-green-600 dark:text-green-400">✅ Capa gerada com sucesso!</span>
+                            @elseif ($coverStatus && str_starts_with($coverStatus, 'error:'))
+                                <span class="text-sm text-red-600 dark:text-red-400">❌ {{ str_replace('error:', '', $coverStatus) }}</span>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Editor de Texto -->
