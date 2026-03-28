@@ -3,11 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\SitemapController;
 
 Volt::route('/', 'home')->name('home');
 Volt::route('blog/{post:slug}', 'posts.show')->name('posts.show');
 Volt::route('autor/{user}', 'about')->name('author.show');
 Route::get('/feed.rss', FeedController::class)->name('feed');
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Volt::route('dashboard', 'dashboard')->name('dashboard');

@@ -2,6 +2,54 @@
 
 Este documento registra as evoluções técnicas, desafios superados e decisões de arquitetura tomadas durante o desenvolvimento do blog.
 
+---
+
+## 📅 Sessão: 28 de Março de 2026
+
+### 🧪 Testes — Preservando Dados de Desenvolvimento
+
+- **Problema:** `RefreshDatabase` chamava `migrate:fresh`, destruindo dados reais do banco a cada `php artisan test`.
+- **Solução elegante:** `DatabaseTransactions` em vez de `RefreshDatabase`.
+  - Cada teste roda dentro de uma transaction que é revertida ao final — sem apagar nada.
+  - `TestCase::setUp()` executa `php artisan migrate` uma única vez (via flag `RefreshDatabaseState::$migrated`) para garantir que novas migrations sejam aplicadas em clones frescos.
+  - Funciona com qualquer banco (PostgreSQL, MySQL, SQLite) sem configuração extra.
+- **Correção do macro Livewire:** `SupportTesting::provide()` verifica `app()->environment('testing')`, mas o Docker injeta `APP_ENV=local`. Solução: forçar `$this->app['env'] = 'testing'` no `TestCase::setUp()` antes de chamar `provide()`.
+- **PHPUnit 12:** anotação `/** @test */` foi removida. Todos os testes migraram para `#[\PHPUnit\Framework\Attributes\Test]`.
+
+### 🤖 Testes de Geração de Capa com IA
+
+- **PostFactory** criada (`database/factories/PostFactory.php`) com estado `published()`.
+- `ImagenServiceTest` — 8 testes unitários para `buildPrompt()` (combinações de prompt, bio, artigo).
+- `ImageServiceTest` — 3 testes unitários para `storeFromBase64()`.
+- `GenerateAiCoverTest` — 4 testes de feature com mock de `ImagenService` (sem chamadas reais à API).
+- Total: **41 testes, todos passando**.
+
+### 🎨 Dark Mode — Trix e Highlight.js
+
+- **Trix Editor:** o CSS do CDN usava seletores de alta especificidade que sobrescreviam as classes `dark:` do Tailwind. Solução: overrides `.dark trix-*` em `app.css` cobrindo toolbar, botões, área de edição, dialogs e blocos de código.
+- **Highlight.js:** estava sempre carregando o tema `github-dark`. Corrigido para alternar dinamicamente entre `github-dark.min.css` (dark) e `github.min.css` (light) via `applyHljsTheme()` chamada no toggle de tema.
+
+### 📱 Redes Sociais no Perfil
+
+- Migration adicionando `social_x`, `social_instagram`, `social_facebook`, `social_linkedin` à tabela `users`.
+- Componente Blade reutilizável `<x-social-links :user="$user" size="sm|md" />` com SVGs inline para X, Instagram, Facebook e LinkedIn.
+- Formulário de perfil: nova seção "Redes Sociais" com campo URL + ícone ao lado de cada input.
+- Ícones exibidos: no cabeçalho do post (`show.blade.php`) e na página do autor (`about.blade.php`).
+
+### 🗺️ Sitemap XML
+
+- `SitemapController` + view `sitemap.blade.php` gerando XML válido (padrão sitemaps.org).
+- Inclui: página inicial, página do autor e todos os posts publicados com `<lastmod>`.
+- Rota: `GET /sitemap.xml`.
+
+### ✅ Status do Open Graph (OG Tags)
+
+- **Já estava implementado** (correção do diário): `og:image`, `og:title`, `og:description` e `twitter:image` são **dinâmicos por post**, usando a capa gerada pela IA.
+- RSS Feed em `/feed.rss` também já estava implementado.
+
+---
+
+
 ### 🎨 Design e Experiência de Leitura (UI/UX)
 - **Sumário Flutuante (Sticky TOC):** Implementado sumário lateral que acompanha a leitura, com scroll interno e design refinado (borda lateral reativa).
 - **Refinamento de Tipografia:** 
