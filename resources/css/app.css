@@ -1,3 +1,78 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* =====================================================
+   Trix Editor — Dark Mode Overrides
+   O trix.css do CDN usa especificidade alta com estilos
+   light-mode. Estas regras reestabelecem o visual escuro
+   quando a classe .dark está presente no <html>.
+   ===================================================== */
+
+/* Área de edição */
+.dark trix-editor {
+    background-color: #1f2937 !important; /* gray-800 */
+    color: #f3f4f6 !important;            /* gray-100 */
+    border-color: #374151 !important;     /* gray-700 */
+    caret-color: #f3f4f6;
+}
+
+/* Toolbar */
+.dark trix-toolbar .trix-button-group {
+    background-color: #111827 !important; /* gray-900 */
+    border-color: #374151 !important;
+}
+
+.dark trix-toolbar .trix-button {
+    background-color: transparent !important;
+    color: #d1d5db !important;            /* gray-300 */
+    border-color: #374151 !important;
+}
+
+.dark trix-toolbar .trix-button:hover {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+}
+
+.dark trix-toolbar .trix-button.trix-active {
+    background-color: #4f46e5 !important; /* indigo-600 */
+    color: #fff !important;
+}
+
+.dark trix-toolbar .trix-button--dialog {
+    background-color: #111827 !important;
+    color: #d1d5db !important;
+}
+
+/* Diálogo de inserção de link/url */
+.dark trix-toolbar .trix-dialog {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4) !important;
+}
+
+.dark trix-toolbar .trix-dialog input[type=text],
+.dark trix-toolbar .trix-dialog input[type=url] {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+    border-color: #4b5563 !important;
+}
+
+/* Blocos de código dentro do editor */
+.dark trix-editor pre {
+    background-color: #0d1117 !important;
+    color: #c9d1d9 !important;
+    border: 1px solid #30363d !important;
+}
+
+/* Citações */
+.dark trix-editor blockquote {
+    background-color: #111827 !important;
+    border-left-color: #6366f1 !important;
+    color: #9ca3af !important;
+}
+
+/* Linha divisória da toolbar */
+.dark trix-toolbar .trix-button-group + .trix-button-group {
+    border-left-color: #374151 !important;
+}

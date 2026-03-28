@@ -20,11 +20,19 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
-        <!-- Syntax Highlighting (Highlight.js) -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+        <!-- Syntax Highlighting (Highlight.js) — tema troca com dark/light mode -->
+        <link id="hljs-theme" rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
         <script>
-            document.addEventListener('DOMContentLoaded', (event) => {
+            function applyHljsTheme() {
+                const isDark = document.documentElement.classList.contains('dark');
+                document.getElementById('hljs-theme').href = isDark
+                    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
+                    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                applyHljsTheme();
                 document.querySelectorAll('pre').forEach((block) => {
                     hljs.highlightElement(block);
                 });
@@ -42,6 +50,7 @@
                 } else {
                     document.documentElement.classList.remove('dark')
                 }
+                if (typeof applyHljsTheme === 'function') applyHljsTheme();
             }
             setDarkMode();
             document.addEventListener('livewire:navigated', setDarkMode);
