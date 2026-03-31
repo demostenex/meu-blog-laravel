@@ -437,7 +437,6 @@ new class extends Component {
             // Adiciona botões H2 e H3 ao lado do H1 (TT) na toolbar
             const h1Btn = toolbar.querySelector('[data-trix-attribute="heading1"]');
             if (h1Btn) {
-                let lastBtn = h1Btn;
                 ['heading2', 'heading3'].forEach((attr) => {
                     const btn = document.createElement('button');
                     btn.type = 'button';
@@ -445,8 +444,7 @@ new class extends Component {
                     btn.dataset.trixAttribute = attr;
                     btn.title = attr === 'heading2' ? 'Subtítulo (H2)' : 'Subtítulo menor (H3)';
                     btn.textContent = attr === 'heading2' ? 'H2' : 'H3';
-                    lastBtn.insertAdjacentElement('afterend', btn);
-                    lastBtn = btn;
+                    h1Btn.insertAdjacentElement('afterend', btn);
                 });
             }
 
