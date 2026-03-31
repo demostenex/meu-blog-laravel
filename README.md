@@ -8,6 +8,8 @@ Este é um blog pessoal completo e moderno, construído com **Laravel 11**, **Li
 - 📋 **Rascunho e Pré-visualização:** Salve artigos como rascunho, pré-visualize como o leitor vai ver e publique quando estiver pronto.
 - 🧑‍💻 **Highlight.js:** Realce automático de sintaxe para blocos de código (perfeito para blogs de tecnologia).
 - 🎨 **Design Moderno:** Listagem limpa agrupada por mês/ano, sumário dinâmico ("Nesta Página") nos artigos longos e barra de busca global.
+- 📖 **Tempo de Leitura:** Calculado automaticamente a partir do conteúdo (200 palavras/min), exibido na listagem e na página do artigo.
+- 📑 **Sumário Inteligente:** Destaca o item correspondente à seção sendo lida (scroll ativo) e inclui link "↑ Voltar ao topo" ao final.
 - 🌓 **Modo Escuro:** Suporte nativo e fluido a Light/Dark mode.
 - 💬 **Comentários:** Integração ponta a ponta com **Disqus**.
 - 🤖 **IA Comentarista:** Bot Gemini AI com persona configurável que lê cada artigo e publica um comentário automático com personalidade.
