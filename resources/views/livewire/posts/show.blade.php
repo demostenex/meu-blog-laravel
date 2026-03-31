@@ -121,13 +121,6 @@ new #[Layout('layouts.blog')] class extends Component {
                     <x-social-links :user="$post->user" size="sm" />
                     <span>&bull;</span>
                     <time>{{ $post->created_at->format('d/m/Y') }}</time>
-                    <span>&bull;</span>
-                    <span class="flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-                        </svg>
-                        {{ $post->reading_time }} min de leitura
-                    </span>
                 </div>
             </header>
 
@@ -239,8 +232,26 @@ new #[Layout('layouts.blog')] class extends Component {
             const content = document.getElementById('article-content');
             const tocList = document.getElementById('toc-list');
             
-            // Busca títulos semânticos h1–h4
-            let headings = Array.from(content.querySelectorAll('h1, h2, h3, h4'));
+            // Busca títulos padrões
+            let headings = Array.from(content.querySelectorAll('h1, h2, h3'));
+            
+            // Busca textos apenas em negrito que atuam como títulos (comportamento comum de colar texto no Trix)
+            const strongs = Array.from(content.querySelectorAll('strong'));
+            strongs.forEach(strong => {
+                const parent = strong.parentElement;
+                // Se o texto do <strong/b> for praticamente todo o texto da <div> pai, é um título de seção!
+                if (parent && (parent.tagName === 'DIV' || parent.tagName === 'P') && strong.textContent.trim().length > 10) {
+                    if (parent.textContent.trim() === strong.textContent.trim()) {
+                        headings.push(strong);
+                    }
+                }
+            });
+
+            // Ordena todos os títulos encontrados pela ordem que aparecem no artigo
+            headings.sort((a, b) => {
+                if (a === b) return 0;
+                return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+            });
             
             if (headings.length === 0) {
                 tocList.innerHTML = '<li class="italic text-gray-400 text-xs">Nenhum sumário disponível.</li>';
@@ -248,8 +259,6 @@ new #[Layout('layouts.blog')] class extends Component {
                 // Mesmo sem seções, mostra o link da IA se existir
                 const aiSection = document.getElementById('ai-comment-section');
                 if (aiSection) appendAiTocItem();
-
-                appendBackToTop();
                 return;
             }
 
@@ -268,17 +277,14 @@ new #[Layout('layouts.blog')] class extends Component {
                 
                 const a = document.createElement('a');
                 a.href = location.pathname + '#' + id;
-                a.dataset.tocId = id;
                 a.innerText = heading.innerText;
                 a.className = 'pl-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block line-clamp-2 leading-tight py-0.5';
                 
-                // Aplica indentação adicional dependendo do nível do heading
+                // Aplica indentação adicional dependendo se é H2 ou H3
                 if (heading.tagName === 'H2') {
                     a.classList.add('pl-6');
                 } else if (heading.tagName === 'H3') {
                     a.classList.add('pl-8');
-                } else if (heading.tagName === 'H4') {
-                    a.classList.add('pl-10');
                 }
 
                 li.appendChild(a);
@@ -324,47 +330,6 @@ new #[Layout('layouts.blog')] class extends Component {
             if (document.getElementById('ai-comment-section')) {
                 appendAiTocItem();
             }
-
-            // Adiciona link "Voltar ao topo" no final do sumário
-            function appendBackToTop() {
-                const li = document.createElement('li');
-                li.className = 'border-t border-gray-100 dark:border-gray-800 pt-3 mt-3 -ml-px';
-
-                const a = document.createElement('a');
-                a.href      = '#';
-                a.className = 'pl-4 flex items-center gap-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors leading-tight py-0.5';
-                a.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-                a.innerHTML = '<span aria-hidden="true">↑</span><span>Voltar ao topo</span>';
-
-                li.appendChild(a);
-                tocList.appendChild(li);
-            }
-
-            appendBackToTop();
-
-            // Destaca o item do sumário correspondente à seção visível
-            const allTocLinks = () => tocList.querySelectorAll('a[data-toc-id]');
-
-            function setActive(id) {
-                allTocLinks().forEach(a => {
-                    const isActive = a.dataset.tocId === id;
-                    a.classList.toggle('font-bold', isActive);
-                    a.classList.toggle('text-gray-900', isActive);
-                    a.classList.toggle('dark:text-white', isActive);
-                    a.classList.toggle('border-blue-500', isActive);
-                });
-            }
-
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) setActive(entry.target.id);
-                });
-            }, { rootMargin: '0px 0px -70% 0px', threshold: 0 });
-
-            headings.forEach(h => { if (h.id) observer.observe(h); });
         });
     </script>
 
@@ -373,7 +338,6 @@ new #[Layout('layouts.blog')] class extends Component {
         .trix-content h1 { font-size: 2.5rem; font-weight: 800; margin: 2rem 0 1rem; color: var(--tw-prose-headings); scroll-margin-top: 6rem; }
         .trix-content h2 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; scroll-margin-top: 6rem; }
         .trix-content h3 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; scroll-margin-top: 6rem; }
-        .trix-content h4 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; scroll-margin-top: 6rem; }
         #ai-comment-section { scroll-margin-top: 6rem; }
         .trix-content p { margin-bottom: 1.5rem; line-height: 1.8; }
         .trix-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; }

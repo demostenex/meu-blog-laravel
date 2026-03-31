@@ -285,28 +285,10 @@ new class extends Component {
     </style>
 
     <script>
-        // Registra H2 e H3 como blocos nativos do Trix
-        Trix.config.blockAttributes.heading2 = { tagName: 'h2', terminal: true, breakOnReturn: true, group: false };
-        Trix.config.blockAttributes.heading3 = { tagName: 'h3', terminal: true, breakOnReturn: true, group: false };
-
         document.addEventListener('trix-initialize', () => {
             const toolbar = document.querySelector('trix-toolbar');
             const editor  = document.querySelector('trix-editor');
             if (!toolbar || !editor) return;
-
-            // Adiciona botões H2 e H3 ao lado do H1 (TT) na toolbar
-            const h1Btn = toolbar.querySelector('[data-trix-attribute="heading1"]');
-            if (h1Btn) {
-                ['heading2', 'heading3'].forEach((attr, i) => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'trix-button';
-                    btn.dataset.trixAttribute = attr;
-                    btn.title = attr === 'heading2' ? 'Subtítulo (H2)' : 'Subtítulo menor (H3)';
-                    btn.textContent = attr === 'heading2' ? 'H2' : 'H3';
-                    h1Btn.insertAdjacentElement('afterend', btn);
-                });
-            }
 
             const spacer = document.createElement('div');
             spacer.style.display = 'none';

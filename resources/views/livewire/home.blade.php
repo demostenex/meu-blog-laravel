@@ -77,12 +77,6 @@ new #[Layout('layouts.blog')] class extends Component {
                                         @endif
                                         <span>{{ $post->user->name }}</span>
                                     </a>
-                                    <span class="flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-                                        </svg>
-                                        {{ $post->reading_time }} min
-                                    </span>
                                 </div>
                                 
                                 <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 leading-tight">

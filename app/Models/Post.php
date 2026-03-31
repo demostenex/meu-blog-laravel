@@ -46,11 +46,4 @@ class Post extends Model
     {
         static::withoutTimestamps(fn() => $this->increment('views_count'));
     }
-
-    public function getReadingTimeAttribute(): int
-    {
-        $wordCount = str_word_count(strip_tags($this->content ?? ''));
-
-        return max(1, (int) ceil($wordCount / 200));
-    }
 }
