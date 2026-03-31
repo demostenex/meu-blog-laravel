@@ -121,6 +121,8 @@ new #[Layout('layouts.blog')] class extends Component {
                     <x-social-links :user="$post->user" size="sm" />
                     <span>&bull;</span>
                     <time>{{ $post->created_at->format('d/m/Y') }}</time>
+                    <span>&bull;</span>
+                    <span>{{ $post->reading_time }} min de leitura</span>
                 </div>
             </header>
 
@@ -277,6 +279,7 @@ new #[Layout('layouts.blog')] class extends Component {
                 
                 const a = document.createElement('a');
                 a.href = location.pathname + '#' + id;
+                a.dataset.tocId = id;
                 a.innerText = heading.innerText;
                 a.className = 'pl-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block line-clamp-2 leading-tight py-0.5';
                 
@@ -330,6 +333,33 @@ new #[Layout('layouts.blog')] class extends Component {
             if (document.getElementById('ai-comment-section')) {
                 appendAiTocItem();
             }
+
+            // Voltar ao topo
+            const backLi = document.createElement('li');
+            backLi.className = 'border-t border-gray-100 dark:border-gray-800 pt-3 mt-3 -ml-px';
+            const backA = document.createElement('a');
+            backA.href = '#';
+            backA.className = 'pl-4 flex items-center gap-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors leading-tight py-0.5';
+            backA.innerHTML = '<span aria-hidden="true">↑</span><span>Voltar ao topo</span>';
+            backA.addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+            backLi.appendChild(backA);
+            tocList.appendChild(backLi);
+
+            // Destaca seção ativa conforme scroll
+            function setActive(id) {
+                tocList.querySelectorAll('a[data-toc-id]').forEach(a => {
+                    const active = a.dataset.tocId === id;
+                    a.classList.toggle('font-bold', active);
+                    a.classList.toggle('text-gray-900', active);
+                    a.classList.toggle('dark:text-white', active);
+                });
+            }
+
+            const observer = new IntersectionObserver(
+                entries => entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); }),
+                { rootMargin: '0px 0px -70% 0px', threshold: 0 }
+            );
+            headings.forEach(h => { if (h.id) observer.observe(h); });
         });
     </script>
 

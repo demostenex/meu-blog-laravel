@@ -77,6 +77,7 @@ new #[Layout('layouts.blog')] class extends Component {
                                         @endif
                                         <span>{{ $post->user->name }}</span>
                                     </a>
+                                    <span>{{ $post->reading_time }} min</span>
                                 </div>
                                 
                                 <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 leading-tight">
