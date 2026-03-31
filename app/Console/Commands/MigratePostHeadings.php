@@ -112,7 +112,12 @@ class MigratePostHeadings extends Command
         $meaningful = [];
 
         foreach ($node->childNodes as $child) {
+            // Ignora texto vazio (whitespace)
             if ($child instanceof DOMText && trim($child->textContent) === '') {
+                continue;
+            }
+            // Ignora <br> que o Trix adiciona ao final de blocos
+            if ($child->nodeType === XML_ELEMENT_NODE && strtolower($child->nodeName) === 'br') {
                 continue;
             }
             $meaningful[] = $child;
