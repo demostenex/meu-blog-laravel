@@ -56,7 +56,7 @@ new #[Layout('layouts.blog')] class extends Component {
         '@type'         => 'Article',
         'headline'      => $post->title,
         'description'   => $description,
-        'datePublished' => $post->published_at->toIso8601String(),
+        'datePublished' => $post->published_at?->toIso8601String() ?? $post->created_at->toIso8601String(),
         'dateModified'  => $post->updated_at->toIso8601String(),
         'url'           => route('posts.show', $post->slug),
         'author'        => [
@@ -120,7 +120,7 @@ new #[Layout('layouts.blog')] class extends Component {
                     </a>
                     <x-social-links :user="$post->user" size="sm" />
                     <span>&bull;</span>
-                    <time>{{ $post->published_at->format('d/m/Y') }}</time>
+                    <time>{{ ($post->published_at ?? $post->created_at)->format('d/m/Y') }}</time>
                     <span>&bull;</span>
                     <span>{{ $post->reading_time }} min de leitura</span>
                 </div>
