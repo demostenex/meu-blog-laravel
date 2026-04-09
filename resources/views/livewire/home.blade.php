@@ -14,7 +14,7 @@ new #[Layout('layouts.blog')] class extends Component {
         // Agrupa os posts da página atual por Mês e Ano
         Carbon::setLocale('pt_BR');
         $groupedPosts = collect($posts->items())->groupBy(function($post) {
-            return Str::ucfirst($post->created_at->translatedFormat('F Y'));
+            return Str::ucfirst($post->published_at->translatedFormat('F Y'));
         });
 
         return [
@@ -66,7 +66,7 @@ new #[Layout('layouts.blog')] class extends Component {
                             <!-- Dados do Artigo -->
                             <div class="flex-1 flex flex-col justify-center min-h-[8rem]">
                                 <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                    <time datetime="{{ $post->created_at->format('Y-m-d') }}" class="font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md">{{ $post->created_at->format('d \d\e M') }}</time>
+                                    <time datetime="{{ $post->published_at->format('Y-m-d') }}" class="font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md">{{ $post->published_at->format('d \d\e M') }}</time>
                                     
                                     <!-- Link do Autor -->
                                     <a href="{{ route('author.show', $post->user) }}" class="flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">

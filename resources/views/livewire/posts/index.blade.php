@@ -69,7 +69,7 @@ new class extends Component {
                                             @endif
                                         </td>
                                         <td class="px-6 py-4">
-                                            {{ $post->created_at->format('d/m/Y') }}
+                                            {{ ($post->published_at ?? $post->created_at)->format('d/m/Y') }}
                                         </td>
                                         <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
                                             @if(!$post->isPublished())
