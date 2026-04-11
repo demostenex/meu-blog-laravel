@@ -330,15 +330,22 @@ new class extends Component {
 
         // Upload de imagens inline no Trix via Livewire
         (function () {
-            let pendingImageAttachment = null;
-            let pendingVideoEditor = null;
-            let pendingVideoAttachment = null;
+            const state = window.__trixInlineUploadState ??= {
+                pendingImageAttachment: null,
+                pendingVideoEditor: null,
+                pendingVideoAttachment: null,
+            };
 
             document.addEventListener('trix-attachment-add', function (event) {
                 const attachment = event.attachment;
                 if (!attachment.file) return;
 
-                const isVideo = attachment.file.type?.startsWith('video/');
+                const fileType = attachment.file.type || '';
+                const fileName = (attachment.file.name || '').toLowerCase();
+                const fileExtension = fileName.includes('.') ? fileName.split('.').pop() : '';
+                const videoExtensions = ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'm4v'];
+                const isVideo = fileType.startsWith('video/') || videoExtensions.includes(fileExtension);
+                const isImage = fileType.startsWith('image/');
                 console.log('[Trix] arquivo detectado:', attachment.file.name);
                 attachment.setUploadProgress(0);
 
@@ -347,9 +354,15 @@ new class extends Component {
                 const component = Livewire.find(wireEl.getAttribute('wire:id'));
                 if (!component) { console.warn('[Trix] componente Livewire não encontrado'); return; }
 
+                if (!isVideo && !isImage) {
+                    console.warn('[Trix] tipo de arquivo não suportado para upload inline:', fileType || '(sem MIME)');
+                    if (typeof attachment.remove === 'function') attachment.remove();
+                    return;
+                }
+
                 if (isVideo) {
-                    pendingVideoEditor = event.target;
-                    pendingVideoAttachment = attachment;
+                    state.pendingVideoEditor = event.target;
+                    state.pendingVideoAttachment = attachment;
                     component.upload(
                         'trixVideo',
                         attachment.file,
@@ -359,8 +372,8 @@ new class extends Component {
                         },
                         () => {
                             console.warn('[Trix] erro no upload de vídeo');
-                            pendingVideoEditor = null;
-                            pendingVideoAttachment = null;
+                            state.pendingVideoEditor = null;
+                            state.pendingVideoAttachment = null;
                         },
                         (progressEvent) => {
                             const progress = progressEvent?.detail?.progress
@@ -371,7 +384,7 @@ new class extends Component {
                     return;
                 }
 
-                pendingImageAttachment = attachment;
+                state.pendingImageAttachment = attachment;
                 component.upload(
                     'trixImage',
                     attachment.file,
@@ -381,7 +394,7 @@ new class extends Component {
                     },
                     () => {
                         console.warn('[Trix] erro no upload');
-                        pendingImageAttachment = null;
+                        state.pendingImageAttachment = null;
                     },
                     (progressEvent) => {
                         const progress = progressEvent?.detail?.progress
@@ -394,22 +407,22 @@ new class extends Component {
             window.addEventListener('trix-image-ready', (event) => {
                 console.log('[Trix] trix-image-ready recebido', event.detail);
                 const url = event.detail?.url;
-                if (pendingImageAttachment && url) {
-                    pendingImageAttachment.setAttributes({ url, href: url });
-                    pendingImageAttachment = null;
+                if (state.pendingImageAttachment && url) {
+                    state.pendingImageAttachment.setAttributes({ url, href: url });
+                    state.pendingImageAttachment = null;
                 }
             });
 
             window.addEventListener('trix-video-ready', (event) => {
                 console.log('[Trix] trix-video-ready recebido', event.detail);
                 const url = event.detail?.url;
-                if (pendingVideoEditor && url) {
-                    pendingVideoEditor.editor.insertString(`\n[[video:${url}]]\n`);
-                    if (pendingVideoAttachment && typeof pendingVideoAttachment.remove === 'function') {
-                        pendingVideoAttachment.remove();
+                if (state.pendingVideoEditor && url) {
+                    state.pendingVideoEditor.editor.insertString(`\n[[video:${url}]]\n`);
+                    if (state.pendingVideoAttachment && typeof state.pendingVideoAttachment.remove === 'function') {
+                        state.pendingVideoAttachment.remove();
                     }
-                    pendingVideoEditor = null;
-                    pendingVideoAttachment = null;
+                    state.pendingVideoEditor = null;
+                    state.pendingVideoAttachment = null;
                 }
             });
         })();
