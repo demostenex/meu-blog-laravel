@@ -142,17 +142,29 @@ new #[Layout('layouts.blog')] class extends Component {
                 #article-content p { margin-bottom: 1.5rem; }
             </style>
             <div id="article-content" class="trix-content text-gray-800 dark:text-gray-200 leading-relaxed text-base sm:text-lg selection:bg-blue-100 dark:selection:bg-blue-900">
-                {!! preg_replace_callback(
-                    '/<a(\s[^>]*)href="(https?:\/\/[^"]+)"([^>]*)>([\s\S]*?)<\/a>/i',
-                    function($m) {
-                        $innerText = trim(strip_tags($m[4]));
-                        $href = $m[2];
-                        $needsLabel = preg_match('#^https?://#i', $innerText);
-                        $label = $needsLabel ? ' aria-label="' . htmlspecialchars(parse_url($href, PHP_URL_HOST) ?: $href) . '"' : '';
-                        return '<a' . $m[1] . 'href="' . $href . '"' . $m[3] . $label . '>' . $m[4] . '</a>';
-                    },
-                    $post->content
-                ) !!}
+                @php
+                    $contentWithVideos = preg_replace_callback(
+                        '/\[\[video:(https?:\/\/[^\]\s]+)\]\]/i',
+                        function ($m) {
+                            $videoUrl = htmlspecialchars($m[1], ENT_QUOTES, 'UTF-8');
+                            return '<figure class="article-video"><video controls preload="metadata" playsinline><source src="' . $videoUrl . '">Seu navegador não suporta vídeo HTML5.</video></figure>';
+                        },
+                        $post->content
+                    );
+
+                    $renderedContent = preg_replace_callback(
+                        '/<a(\s[^>]*)href="(https?:\/\/[^"]+)"([^>]*)>([\s\S]*?)<\/a>/i',
+                        function ($m) {
+                            $innerText = trim(strip_tags($m[4]));
+                            $href = $m[2];
+                            $needsLabel = preg_match('#^https?://#i', $innerText);
+                            $label = $needsLabel ? ' aria-label="' . htmlspecialchars(parse_url($href, PHP_URL_HOST) ?: $href) . '"' : '';
+                            return '<a' . $m[1] . 'href="' . $href . '"' . $m[3] . $label . '>' . $m[4] . '</a>';
+                        },
+                        $contentWithVideos
+                    );
+                @endphp
+                {!! $renderedContent !!}
             </div>
         </article>
 
@@ -384,6 +396,8 @@ new #[Layout('layouts.blog')] class extends Component {
         }
         .dark .trix-content blockquote { background: #1f2937; color: #9ca3af; }
         .trix-content img { border-radius: 1rem; width: 100%; height: auto; margin: 2rem 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .trix-content .article-video { margin: 2rem 0; }
+        .trix-content .article-video video { width: 100%; height: auto; border-radius: 1rem; background: #000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .trix-content a { color: #3b82f6; text-decoration: underline; text-underline-offset: 4px; font-weight: 500; }
 
         /* Estilo para Blocos de Código (Highlight.js) */
