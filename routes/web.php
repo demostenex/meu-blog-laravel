@@ -9,7 +9,9 @@ Volt::route('/', 'home')->name('home');
 Volt::route('blog/{post:slug}', 'posts.show')->name('posts.show');
 Volt::route('autor/{user}', 'about')->name('author.show');
 Route::get('/feed.rss', FeedController::class)->name('feed');
-Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
+Route::get('/sitemap-posts.xml', [SitemapController::class, 'posts'])->name('sitemap.posts');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Volt::route('dashboard', 'dashboard')->name('dashboard');

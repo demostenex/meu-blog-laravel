@@ -16,6 +16,9 @@ Este é um blog pessoal completo e moderno, construído com **Laravel 11**, **Li
 - 🎨 **Capa com IA (Nano Banana):** Geração automática de imagem de capa via **Google Gemini** (`gemini-3.1-flash-image-preview`). No painel de edição, descreva a imagem, opcionalmente inclua o conteúdo do artigo e/ou a bio do autor como contexto, e gere a capa com um clique. Usa a mesma chave de API do comentarista.
 - 📊 **Dashboard:** Contador de visualizações, total de posts e ranking dos mais lidos.
 - 🔍 **SEO 100/100:** Meta tags completas (title, description, canonical, OG, Twitter Cards, JSON-LD), Lighthouse passando com 100 pontos.
+- 🗺️ **Sitemap Inteligente:** Sitemap index em `/sitemap.xml` com sub-sitemaps separados para páginas (`/sitemap-pages.xml`) e posts (`/sitemap-posts.xml`). Ping automático no Google toda vez que um rascunho é publicado.
+- 🤖 **robots.txt:** Bloqueia rotas de admin e aponta para o sitemap index automaticamente.
+- 🔒 **Backup Automático:** Comando `php artisan backup:run` gera dump do banco (`.sql.gz`) + zip das imagens e envia por e-mail. Vídeos são referenciados por URL no corpo do e-mail (evita estouro do limite de anexo).
 
 ---
 
@@ -154,3 +157,41 @@ git pull origin master
 docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml exec app php artisan optimize
 ```
+---
+
+## 🔒 Backup
+
+O projeto inclui um comando Artisan para backup do banco e das imagens, com envio por e-mail.
+
+```bash
+# Backup básico (usa o e-mail configurado em MAIL_FROM_ADDRESS)
+docker compose -f docker-compose.prod.yml exec app php artisan backup:run
+
+# Backup para e-mail específico, mantendo os últimos 3 backups locais
+docker compose -f docker-compose.prod.yml exec app php artisan backup:run --email=seu@email.com --keep=3
+```
+
+**O que é enviado:**
+- 📎 **Anexo 1:** Dump completo do PostgreSQL comprimido (`banco_YYYY-MM-DD.sql.gz`)
+- 📎 **Anexo 2:** Zip com todas as imagens, capas e avatares (`imagens_YYYY-MM-DD.zip`)
+- 🔗 **No corpo:** URLs absolutas dos vídeos (pesados demais para anexar)
+
+Os backups ficam salvos localmente em `storage/app/backups/` (fora do git).
+
+> ⚙️ Configure `MAIL_MAILER`, `MAIL_HOST`, `MAIL_USERNAME` e `MAIL_PASSWORD` no `.env` para usar Gmail ou outro SMTP.
+
+---
+
+## 🗺️ Sitemap & SEO
+
+O sitemap é gerado dinamicamente pelo Laravel em três endpoints:
+
+| URL | Conteúdo |
+|---|---|
+| `/sitemap.xml` | Índice geral (aponta para os dois abaixo) |
+| `/sitemap-pages.xml` | Homepage e página do autor |
+| `/sitemap-posts.xml` | Todos os posts publicados |
+
+**Ping automático:** Toda vez que um rascunho é publicado, o Google é notificado automaticamente via `https://www.google.com/ping`.
+
+O `robots.txt` já aponta para o sitemap index e bloqueia todas as rotas de admin.
