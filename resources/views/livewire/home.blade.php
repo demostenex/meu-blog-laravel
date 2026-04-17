@@ -3,24 +3,58 @@
 use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
 use App\Models\Post;
+use App\Models\Category;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 new #[Layout('layouts.blog')] class extends Component {
+    public string $filterMonth = '';
+    public string $filterCategory = '';
+
     public function with(): array
     {
-        $posts = Post::published()->with('user', 'category', 'tags')->latest('published_at')->paginate(15);
+        $query = Post::published()
+            ->with('user', 'category', 'tags')
+            ->when($this->filterMonth, function ($q) {
+                [$year, $month] = explode('-', $this->filterMonth);
+                $q->whereYear('published_at', $year)->whereMonth('published_at', $month);
+            })
+            ->when($this->filterCategory, fn($q) => $q->where('category_id', $this->filterCategory))
+            ->latest('published_at');
 
-        // Agrupa os posts da página atual por Mês e Ano
+        $posts = $query->paginate(15);
+
         Carbon::setLocale('pt_BR');
-        $groupedPosts = collect($posts->items())->groupBy(function($post) {
+
+        $groupedPosts = collect($posts->items())->groupBy(function ($post) {
             return Str::ucfirst($post->published_at->translatedFormat('F Y'));
         });
 
+        // Months that have published posts, for the filter pills
+        $availableMonths = Post::published()
+            ->selectRaw("TO_CHAR(published_at, 'YYYY-MM') as month_key, TO_CHAR(published_at, 'Mon/YY') as label")
+            ->orderByRaw("month_key DESC")
+            ->distinct()
+            ->pluck('label', 'month_key');
+
+        $categories = Category::whereHas('posts', fn($q) => $q->published())->orderBy('name')->get();
+
         return [
-            'posts' => $posts,
-            'groupedPosts' => $groupedPosts,
+            'posts'           => $posts,
+            'groupedPosts'    => $groupedPosts,
+            'availableMonths' => $availableMonths,
+            'categories'      => $categories,
         ];
+    }
+
+    public function setMonth(string $month): void
+    {
+        $this->filterMonth = $this->filterMonth === $month ? '' : $month;
+    }
+
+    public function setCategory(string $id): void
+    {
+        $this->filterCategory = $this->filterCategory === $id ? '' : $id;
     }
 }; ?>
 
@@ -33,12 +67,57 @@ new #[Layout('layouts.blog')] class extends Component {
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <!-- Cabeçalho -->
-    <header class="mb-16">
+    <header class="mb-10">
         <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-2">Artigos</h1>
         <p class="text-lg text-gray-600 dark:text-gray-400">
             Explore meus pensamentos, tutoriais e reflexões.
         </p>
     </header>
+
+    <!-- Filtros -->
+    @if($availableMonths->isNotEmpty() || $categories->isNotEmpty())
+        <div class="mb-10 space-y-3">
+            @if($categories->isNotEmpty())
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Categoria</span>
+                    @foreach($categories as $cat)
+                        <button wire:click="setCategory('{{ $cat->id }}')" type="button"
+                            class="text-xs px-3 py-1 rounded-full border transition-colors
+                                {{ $filterCategory == $cat->id
+                                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-indigo-400 dark:hover:border-indigo-500' }}">
+                            {{ $cat->name }}
+                        </button>
+                    @endforeach
+                </div>
+            @endif
+
+            @if($availableMonths->isNotEmpty())
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Data</span>
+                    @foreach($availableMonths as $key => $label)
+                        <button wire:click="setMonth('{{ $key }}')" type="button"
+                            class="text-xs px-3 py-1 rounded-full border transition-colors
+                                {{ $filterMonth === $key
+                                    ? 'bg-blue-600 border-blue-600 text-white'
+                                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500' }}">
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
+            @endif
+
+            @if($filterMonth || $filterCategory)
+                <div>
+                    <button wire:click="$set('filterMonth', ''); $set('filterCategory', '')" type="button"
+                        class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1 transition-colors">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Limpar filtros
+                    </button>
+                </div>
+            @endif
+        </div>
+    @endif
 
     <!-- Listagem Agrupada -->
     <div class="space-y-16">
@@ -65,7 +144,7 @@ new #[Layout('layouts.blog')] class extends Component {
 
                             <!-- Dados do Artigo -->
                             <div class="flex-1 flex flex-col justify-center min-h-[8rem]">
-                                <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
                                     <time datetime="{{ $post->published_at->format('Y-m-d') }}" class="font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md">{{ $post->published_at->format('d \d\e M') }}</time>
                                     
                                     <!-- Link do Autor -->
@@ -115,8 +194,20 @@ new #[Layout('layouts.blog')] class extends Component {
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                 </svg>
-                <h3 class="mt-4 text-sm font-semibold text-gray-900 dark:text-white">Blog vazio</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Nenhum artigo publicado ainda. Volte em breve!</p>
+                <h3 class="mt-4 text-sm font-semibold text-gray-900 dark:text-white">
+                    @if($filterMonth || $filterCategory)
+                        Nenhum artigo encontrado com esses filtros.
+                    @else
+                        Blog vazio
+                    @endif
+                </h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    @if($filterMonth || $filterCategory)
+                        Tente remover os filtros para ver todos os artigos.
+                    @else
+                        Nenhum artigo publicado ainda. Volte em breve!
+                    @endif
+                </p>
             </div>
         @endforelse
     </div>
@@ -125,4 +216,5 @@ new #[Layout('layouts.blog')] class extends Component {
     <div class="mt-16">
         {{ $posts->links() }}
     </div>
+</div>
 </div>
