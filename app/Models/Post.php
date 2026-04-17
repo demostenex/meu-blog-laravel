@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['user_id', 'title', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'published_at', 'views_count'])]
+#[Fillable(['user_id', 'category_id', 'title', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'published_at', 'views_count'])]
 class Post extends Model
 {
     use HasFactory;
@@ -30,6 +31,16 @@ class Post extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class);
     }
 
     public function aiComments(): \Illuminate\Database\Eloquent\Relations\HasMany

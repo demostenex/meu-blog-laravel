@@ -3,6 +3,8 @@
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
+use App\Models\Category;
+use App\Models\Tag;
 use App\Services\ImageService;
 use App\Services\ImagenService;
 use Illuminate\Support\Facades\Storage;
@@ -23,14 +25,26 @@ new class extends Component {
     public bool $generatingCover = false;
     public ?string $coverStatus = null;
 
+    public ?int $category_id = null;
+    public string $tags_input = '';
+
     public function rules()
     {
         return [
-            'title'      => 'required|string|max:255',
-            'content'    => 'required|string',
+            'title'       => 'required|string|max:255',
+            'content'     => 'required|string',
             'cover_image' => 'nullable|image|max:2048',
-            'trixImage'  => 'nullable|image|max:5120',
-            'trixVideo'  => 'nullable|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400',
+            'trixImage'   => 'nullable|image|max:5120',
+            'trixVideo'   => 'nullable|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400',
+            'category_id' => 'nullable|exists:categories,id',
+            'tags_input'  => 'nullable|string|max:500',
+        ];
+    }
+
+    public function with(): array
+    {
+        return [
+            'categories' => Category::orderBy('name')->get(),
         ];
     }
 
@@ -61,7 +75,7 @@ new class extends Component {
             $imagePath = $this->ai_generated_cover_path;
         }
 
-        return auth()->user()->posts()->create([
+        $post = auth()->user()->posts()->create([
             'title'                   => $this->title,
             'slug'                    => Str::slug($this->title) . '-' . uniqid(),
             'content'                 => $this->content,
@@ -70,7 +84,22 @@ new class extends Component {
             'cover_image_use_content' => $this->cover_image_use_content,
             'cover_image_use_bio'     => $this->cover_image_use_bio,
             'published_at'            => $publish ? now() : null,
+            'category_id'             => $this->category_id ?: null,
         ]);
+
+        if ($this->tags_input) {
+            $tagIds = collect(explode(',', $this->tags_input))
+                ->map(fn($t) => trim($t))
+                ->filter()
+                ->map(fn($name) => Tag::firstOrCreate(
+                    ['slug' => Str::slug($name)],
+                    ['name' => $name]
+                ))
+                ->pluck('id');
+            $post->tags()->sync($tagIds);
+        }
+
+        return $post;
     }
 
     public function generateAiCover(): void
@@ -147,6 +176,24 @@ new class extends Component {
                         <x-input-label for="title" :value="__('Título do Artigo')" />
                         <x-text-input wire:model="title" id="title" name="title" type="text" class="mt-1 block w-full text-lg" required autofocus placeholder="Ex: Como configurar um servidor Linux em 10 minutos" />
                         <x-input-error class="mt-2" :messages="$errors->get('title')" />
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="category_id" :value="__('Categoria')" />
+                            <select wire:model="category_id" id="category_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <option value="">Sem categoria</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error class="mt-1" :messages="$errors->get('category_id')" />
+                        </div>
+                        <div>
+                            <x-input-label for="tags_input" :value="__('Tags (separe por vírgula)')" />
+                            <x-text-input wire:model="tags_input" id="tags_input" type="text" class="mt-1 block w-full" placeholder="Ex: Laravel, Docker, PHP" />
+                            <x-input-error class="mt-1" :messages="$errors->get('tags_input')" />
+                        </div>
                     </div>
 
                     <div>

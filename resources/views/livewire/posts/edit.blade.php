@@ -4,6 +4,8 @@ use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
 use App\Models\Post;
+use App\Models\Category;
+use App\Models\Tag;
 use App\Services\GeminiService;
 use App\Services\ImagenService;
 use App\Services\ImageService;
@@ -30,6 +32,9 @@ new class extends Component {
     public bool $generatingComment = false;
     public ?string $commentStatus = null;
 
+    public ?int $category_id = null;
+    public string $tags_input = '';
+
     public function mount(Post $post)
     {
         abort_if($post->user_id !== auth()->id(), 403);
@@ -41,6 +46,15 @@ new class extends Component {
         $this->cover_image_prompt = $post->cover_image_prompt ?? '';
         $this->cover_image_use_content = (bool) $post->cover_image_use_content;
         $this->cover_image_use_bio = (bool) $post->cover_image_use_bio;
+        $this->category_id = $post->category_id;
+        $this->tags_input = $post->tags->pluck('name')->join(', ');
+    }
+
+    public function with(): array
+    {
+        return [
+            'categories' => Category::orderBy('name')->get(),
+        ];
     }
 
     public function rules()
@@ -51,6 +65,8 @@ new class extends Component {
             'cover_image' => 'nullable|image|max:2048',
             'trixImage'   => 'nullable|image|max:5120',
             'trixVideo'   => 'nullable|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400',
+            'category_id' => 'nullable|exists:categories,id',
+            'tags_input'  => 'nullable|string|max:500',
         ];
     }
 
@@ -98,7 +114,18 @@ new class extends Component {
             'cover_image_prompt'      => $this->cover_image_prompt ?: null,
             'cover_image_use_content' => $this->cover_image_use_content,
             'cover_image_use_bio'     => $this->cover_image_use_bio,
+            'category_id'             => $this->category_id ?: null,
         ]);
+
+        $tagIds = collect(explode(',', $this->tags_input))
+            ->map(fn($t) => trim($t))
+            ->filter()
+            ->map(fn($name) => Tag::firstOrCreate(
+                ['slug' => Str::slug($name)],
+                ['name' => $name]
+            ))
+            ->pluck('id');
+        $this->post->tags()->sync($tagIds);
     }
 
     public function save()
@@ -228,8 +255,25 @@ new class extends Component {
                         <x-input-error class="mt-2" :messages="$errors->get('title')" />
                     </div>
 
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="category_id" :value="__('Categoria')" />
+                            <select wire:model="category_id" id="category_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <option value="">Sem categoria</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error class="mt-1" :messages="$errors->get('category_id')" />
+                        </div>
+                        <div>
+                            <x-input-label for="tags_input" :value="__('Tags (separe por vírgula)')" />
+                            <x-text-input wire:model="tags_input" id="tags_input" type="text" class="mt-1 block w-full" placeholder="Ex: Laravel, Docker, PHP" />
+                            <x-input-error class="mt-1" :messages="$errors->get('tags_input')" />
+                        </div>
+                    </div>
+
                     <div>
-                        <x-input-label for="cover_image" :value="__('Foto de Capa (Opcional)')" />
                         
                         @if ($cover_image)
                             <div class="mt-2 mb-2">

@@ -9,7 +9,7 @@ new #[Layout('layouts.blog')] class extends Component {
 
     public function mount(Post $post)
     {
-        $this->post = $post;
+        $this->post = $post->load('category', 'tags');
 
         // Rascunho só pode ser visto pelo dono
         if (! $post->isPublished()) {
@@ -101,10 +101,23 @@ new #[Layout('layouts.blog')] class extends Component {
         <article>
             <!-- Título -->
             <header class="mb-12 text-center lg:text-left">
-                <div class="mb-4">
-                    <span class="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
-                        Artigo
-                    </span>
+                <div class="mb-4 flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                    @if($post->category)
+                        <a href="{{ route('categories.show', $post->category->slug) }}" wire:navigate
+                           class="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors">
+                            {{ $post->category->name }}
+                        </a>
+                    @else
+                        <span class="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
+                            Artigo
+                        </span>
+                    @endif
+                    @foreach($post->tags as $tag)
+                        <a href="{{ route('tags.show', $tag->slug) }}" wire:navigate
+                           class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            #{{ $tag->name }}
+                        </a>
+                    @endforeach
                 </div>
                 <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl lg:text-3xl mb-6">
                     {{ $post->title }}

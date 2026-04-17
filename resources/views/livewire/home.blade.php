@@ -9,7 +9,7 @@ use Carbon\Carbon;
 new #[Layout('layouts.blog')] class extends Component {
     public function with(): array
     {
-        $posts = Post::published()->with('user')->latest('published_at')->paginate(15);
+        $posts = Post::published()->with('user', 'category', 'tags')->latest('published_at')->paginate(15);
 
         // Agrupa os posts da página atual por Mês e Ano
         Carbon::setLocale('pt_BR');
@@ -78,6 +78,13 @@ new #[Layout('layouts.blog')] class extends Component {
                                         <span>{{ $post->user->name }}</span>
                                     </a>
                                     <span>{{ $post->reading_time }} min</span>
+
+                                    @if($post->category)
+                                        <a href="{{ route('categories.show', $post->category->slug) }}" wire:navigate
+                                           class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                            {{ $post->category->name }}
+                                        </a>
+                                    @endif
                                 </div>
                                 
                                 <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 leading-tight">
@@ -87,6 +94,17 @@ new #[Layout('layouts.blog')] class extends Component {
                                 <p class="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 leading-relaxed">
                                     {{ Str::limit(strip_tags($post->content), 200) }}
                                 </p>
+
+                                @if($post->tags->isNotEmpty())
+                                    <div class="flex flex-wrap gap-1.5 mt-3">
+                                        @foreach($post->tags as $tag)
+                                            <a href="{{ route('tags.show', $tag->slug) }}" wire:navigate
+                                               class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors">
+                                                #{{ $tag->name }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         </article>
                     @endforeach
