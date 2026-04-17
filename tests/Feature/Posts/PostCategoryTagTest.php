@@ -53,12 +53,15 @@ class PostCategoryTagTest extends TestCase
     public function creating_post_with_tags_creates_and_associates_them(): void
     {
         $user = User::factory()->create();
+        $tag1 = Tag::factory()->create(['name' => 'Laravel', 'slug' => 'laravel']);
+        $tag2 = Tag::factory()->create(['name' => 'Docker', 'slug' => 'docker']);
+        $tag3 = Tag::factory()->create(['name' => 'PHP', 'slug' => 'php']);
 
         Volt::actingAs($user)
             ->test('posts.create')
             ->set('title', 'Artigo com Tags')
             ->set('content', 'Conteúdo do artigo com tags para teste.')
-            ->set('tags_input', 'Laravel, Docker, PHP')
+            ->set('selectedTagIds', [$tag1->id, $tag2->id, $tag3->id])
             ->call('save');
 
         $post = Post::where('title', 'Artigo com Tags')->first();
@@ -79,7 +82,7 @@ class PostCategoryTagTest extends TestCase
             ->test('posts.create')
             ->set('title', 'Artigo Reutilizando Tag')
             ->set('content', 'Conteúdo para reutilizar tag existente no teste.')
-            ->set('tags_input', 'Reutilizado')
+            ->set('selectedTagIds', [$existingTag->id])
             ->call('save');
 
         $post = Post::where('title', 'Artigo Reutilizando Tag')->first();
@@ -115,8 +118,8 @@ class PostCategoryTagTest extends TestCase
 
         Volt::actingAs($user)
             ->test('posts.edit', ['post' => $post])
-            ->assertSet('tags_input', 'TagA')
-            ->set('tags_input', 'TagB')
+            ->assertSet('selectedTagIds', [$tag1->id])
+            ->set('selectedTagIds', [$tag2->id])
             ->call('save');
 
         $post->refresh();
@@ -134,7 +137,7 @@ class PostCategoryTagTest extends TestCase
 
         Volt::actingAs($user)
             ->test('posts.edit', ['post' => $post])
-            ->set('tags_input', '')
+            ->set('selectedTagIds', [])
             ->call('save');
 
         $this->assertCount(0, $post->fresh()->tags);
@@ -152,6 +155,6 @@ class PostCategoryTagTest extends TestCase
         Volt::actingAs($user)
             ->test('posts.edit', ['post' => $post])
             ->assertSet('category_id', $category->id)
-            ->assertSet('tags_input', 'PreTag');
+            ->assertSet('selectedTagIds', [$tag->id]);
     }
 }

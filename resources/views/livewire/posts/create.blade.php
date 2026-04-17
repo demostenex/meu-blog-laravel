@@ -26,7 +26,8 @@ new class extends Component {
     public ?string $coverStatus = null;
 
     public ?int $category_id = null;
-    public string $tags_input = '';
+    public array $selectedTagIds = [];
+    public string $newTag = '';
 
     public function rules()
     {
@@ -36,8 +37,10 @@ new class extends Component {
             'cover_image' => 'nullable|image|max:2048',
             'trixImage'   => 'nullable|image|max:5120',
             'trixVideo'   => 'nullable|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400',
-            'category_id' => 'nullable|exists:categories,id',
-            'tags_input'  => 'nullable|string|max:500',
+            'category_id'    => 'nullable|exists:categories,id',
+            'selectedTagIds' => 'nullable|array',
+            'selectedTagIds.*' => 'exists:tags,id',
+            'newTag'         => 'nullable|string|max:100',
         ];
     }
 
@@ -45,7 +48,30 @@ new class extends Component {
     {
         return [
             'categories' => Category::orderBy('name')->get(),
+            'allTags'    => Tag::orderBy('name')->get(),
         ];
+    }
+
+    public function toggleTag(int $id): void
+    {
+        if (in_array($id, $this->selectedTagIds)) {
+            $this->selectedTagIds = array_values(array_diff($this->selectedTagIds, [$id]));
+        } else {
+            $this->selectedTagIds[] = $id;
+        }
+    }
+
+    public function addNewTag(): void
+    {
+        $this->validate(['newTag' => 'required|string|max:100']);
+        $tag = Tag::firstOrCreate(
+            ['slug' => Str::slug($this->newTag)],
+            ['name' => trim($this->newTag)]
+        );
+        if (!in_array($tag->id, $this->selectedTagIds)) {
+            $this->selectedTagIds[] = $tag->id;
+        }
+        $this->newTag = '';
     }
 
     public function storeTrixImage(): void
@@ -87,16 +113,8 @@ new class extends Component {
             'category_id'             => $this->category_id ?: null,
         ]);
 
-        if ($this->tags_input) {
-            $tagIds = collect(explode(',', $this->tags_input))
-                ->map(fn($t) => trim($t))
-                ->filter()
-                ->map(fn($name) => Tag::firstOrCreate(
-                    ['slug' => Str::slug($name)],
-                    ['name' => $name]
-                ))
-                ->pluck('id');
-            $post->tags()->sync($tagIds);
+        if (!empty($this->selectedTagIds)) {
+            $post->tags()->sync($this->selectedTagIds);
         }
 
         return $post;
@@ -190,9 +208,28 @@ new class extends Component {
                             <x-input-error class="mt-1" :messages="$errors->get('category_id')" />
                         </div>
                         <div>
-                            <x-input-label for="tags_input" :value="__('Tags (separe por vírgula)')" />
-                            <x-text-input wire:model="tags_input" id="tags_input" type="text" class="mt-1 block w-full" placeholder="Ex: Laravel, Docker, PHP" />
-                            <x-input-error class="mt-1" :messages="$errors->get('tags_input')" />
+                            <x-input-label :value="__('Tags')" />
+                            @if($allTags->isNotEmpty())
+                                <div class="flex flex-wrap gap-2 mt-2 mb-2">
+                                    @foreach($allTags as $tag)
+                                        <button type="button" wire:click="toggleTag({{ $tag->id }})"
+                                            class="text-xs px-3 py-1 rounded-full border transition-colors
+                                                {{ in_array($tag->id, $selectedTagIds)
+                                                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400' }}">
+                                            #{{ $tag->name }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+                            <div class="flex gap-2 mt-1">
+                                <x-text-input wire:model="newTag" wire:keydown.enter.prevent="addNewTag" type="text" class="block w-full text-sm" placeholder="Nova tag..." />
+                                <button type="button" wire:click="addNewTag"
+                                    class="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                    + Adicionar
+                                </button>
+                            </div>
+                            <x-input-error class="mt-1" :messages="$errors->get('newTag')" />
                         </div>
                     </div>
 
