@@ -210,7 +210,7 @@ new class extends Component {
                         <div>
                             <x-input-label :value="__('Tags')" />
                             @if($allTags->isNotEmpty())
-                                <div class="flex flex-wrap gap-2 mt-2 mb-2">
+                                <div class="flex flex-wrap gap-2 mt-2 mb-2 max-h-28 overflow-y-auto pr-1">
                                     @foreach($allTags as $tag)
                                         <button type="button" wire:click="toggleTag({{ $tag->id }})"
                                             class="text-xs px-3 py-1 rounded-full border transition-colors
