@@ -126,7 +126,7 @@ new #[Layout('layouts.blog')] class extends Component {
                     @endforeach
                 </div>
                 <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl lg:text-3xl mb-6">
-                    {{ $post->title }}
+                    {{ $lang === 'en' && $post->title_en ? $post->title_en : $post->title }}
                 </h1>
                 <div class="flex items-center justify-center lg:justify-start gap-3 text-sm text-gray-500 dark:text-gray-400">
                     <a href="{{ route('author.show', $post->user) }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">

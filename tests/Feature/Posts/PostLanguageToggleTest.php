@@ -111,6 +111,24 @@ class PostLanguageToggleTest extends TestCase
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
+    public function title_shows_english_version_when_lang_is_en(): void
+    {
+        $post = Post::factory()->create([
+            'user_id'      => $this->user->id,
+            'published_at' => now(),
+            'title'        => 'Meu Artigo',
+            'title_en'     => 'My Article',
+            'content_en'   => 'English content.',
+        ]);
+
+        Volt::test('posts.show', ['post' => $post])
+            ->assertSee('Meu Artigo')
+            ->call('switchLang', 'en')
+            ->assertSee('My Article')
+            ->assertDontSee('Meu Artigo');
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
     public function ai_comment_shows_english_version_when_lang_is_en(): void
     {
         $post = Post::factory()->create([
