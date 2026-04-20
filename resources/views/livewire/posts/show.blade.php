@@ -282,9 +282,12 @@ new #[Layout('layouts.blog')] class extends Component {
     </aside>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        function buildToc() {
             const content = document.getElementById('article-content');
             const tocList = document.getElementById('toc-list');
+            if (!content || !tocList) return;
+
+            tocList.innerHTML = '';
             
             // Busca títulos padrões
             let headings = Array.from(content.querySelectorAll('h1, h2, h3'));
@@ -412,7 +415,10 @@ new #[Layout('layouts.blog')] class extends Component {
                 { rootMargin: '0px 0px -70% 0px', threshold: 0 }
             );
             headings.forEach(h => { if (h.id) observer.observe(h); });
-        });
+        }
+
+        document.addEventListener('DOMContentLoaded', buildToc);
+        document.addEventListener('livewire:updated', buildToc);
     </script>
 
     <style>
