@@ -25,6 +25,7 @@ new #[Layout('layouts.blog')] class extends Component {
     public function switchLang(string $lang): void
     {
         $this->lang = in_array($lang, ['pt', 'en']) ? $lang : 'pt';
+        $this->dispatch('language-changed');
     }
 }; ?>
 
@@ -418,7 +419,7 @@ new #[Layout('layouts.blog')] class extends Component {
         }
 
         document.addEventListener('DOMContentLoaded', buildToc);
-        document.addEventListener('livewire:updated', buildToc);
+        window.addEventListener('language-changed', () => requestAnimationFrame(buildToc));
     </script>
 
     <style>
