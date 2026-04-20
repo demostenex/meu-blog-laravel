@@ -179,7 +179,7 @@ new #[Layout('layouts.blog')] class extends Component {
             </style>
             <div id="article-content" class="trix-content text-gray-800 dark:text-gray-200 leading-relaxed text-base sm:text-lg selection:bg-blue-100 dark:selection:bg-blue-900">
                 @if($lang === 'en' && $post->content_en)
-                    <div class="whitespace-pre-wrap">{{ $post->content_en }}</div>
+                    {!! $post->content_en !!}
                 @else
                 @php
                     $contentWithVideos = preg_replace_callback(

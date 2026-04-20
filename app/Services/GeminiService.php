@@ -34,6 +34,39 @@ PROMPT;
             ?? throw new \RuntimeException('Unexpected response from Gemini API.');
     }
 
+    /**
+     * Translates HTML content to English while preserving all URLs (href/src).
+     * URLs are replaced with numbered placeholders before sending to the API
+     * and restored afterwards, so the AI never sees or modifies real links.
+     */
+    public function translateHtml(string $html, User $user): string
+    {
+        $urls    = [];
+        $counter = 0;
+
+        // Replace every href and src value with a placeholder
+        $withPlaceholders = preg_replace_callback(
+            '/((?:href|src|data-src)=")([^"]+)(")/i',
+            function ($m) use (&$urls, &$counter) {
+                $counter++;
+                $key         = "TRANSURL{$counter}";
+                $urls[$key]  = $m[2];
+
+                return $m[1] . $key . $m[3];
+            },
+            $html
+        );
+
+        $translated = $this->translateText($withPlaceholders, $user);
+
+        // Restore original URLs
+        foreach ($urls as $key => $url) {
+            $translated = str_replace($key, $url, $translated);
+        }
+
+        return $translated;
+    }
+
     public function generateComment(Post $post, User $user): AiComment
     {
         $persona = $post->user->gemini_persona

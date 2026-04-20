@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['user_id', 'category_id', 'title', 'title_en', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'content_en', 'published_at', 'views_count'])]
+#[Fillable(['user_id', 'category_id', 'title', 'title_en', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'content_en', 'content_en_status', 'published_at', 'views_count'])]
 class Post extends Model
 {
     use HasFactory;

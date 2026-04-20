@@ -31,6 +31,33 @@ services:
     networks:
       - meublog-network
 
+  worker:
+    image: meublog-app:latest
+    container_name: meublog_worker
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan queue:work --sleep=3 --tries=2 --timeout=300
+    env_file:
+      - .env
+    volumes:
+      - .:/var/www
+      - vendor:/var/www/vendor
+      - node_modules:/var/www/node_modules
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-laravel}
+      - DB_USERNAME=${DB_USERNAME:-sail}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+    depends_on:
+      - db
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - meublog-network
+
   nginx:
     image: nginx:alpine
     container_name: meublog_nginx

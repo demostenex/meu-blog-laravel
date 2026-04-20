@@ -2,6 +2,7 @@
 
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
+use Livewire\Attributes\Poll;
 use Illuminate\Support\Str;
 use App\Models\Post;
 use App\Models\Category;
@@ -9,6 +10,7 @@ use App\Models\Tag;
 use App\Services\GeminiService;
 use App\Services\ImagenService;
 use App\Services\ImageService;
+use App\Jobs\GenerateEnglishVersionJob;
 use Illuminate\Support\Facades\Storage;
 
 new class extends Component {
@@ -221,33 +223,29 @@ new class extends Component {
             return;
         }
 
-        $this->generatingEnglish = true;
-        $this->englishStatus = null;
+        $this->post->update(['content_en_status' => 'pending']);
+        $this->post->refresh();
 
-        try {
-            $service = app(GeminiService::class);
+        GenerateEnglishVersionJob::dispatch($this->post->id);
+    }
 
-            $titleEn   = $service->translateText($this->post->title, $user);
-            $contentEn = $service->translateText(\Str::limit(strip_tags($this->post->content), 8000), $user);
+    #[Poll(750, 'isEnglishPending')]
+    public function refreshEnglishStatus(): void
+    {
+        $this->post->refresh();
 
-            $this->post->update([
-                'title_en'   => $titleEn,
-                'content_en' => $contentEn,
-            ]);
-
-            if ($this->post->latestAiComment) {
-                $this->post->latestAiComment->update([
-                    'content_en' => $service->translateText($this->post->latestAiComment->content, $user),
-                ]);
-            }
-
-            $this->post->refresh();
-            $this->englishStatus = 'success';
-        } catch (\Throwable $e) {
-            $this->englishStatus = 'error:' . $e->getMessage();
-        } finally {
-            $this->generatingEnglish = false;
+        if ($this->post->content_en_status !== 'pending') {
+            $this->englishStatus = match ($this->post->content_en_status) {
+                'done'  => 'success',
+                'error' => 'error:Falha ao gerar a versão em inglês. Tente novamente.',
+                default => null,
+            };
         }
+    }
+
+    public function isEnglishPending(): bool
+    {
+        return $this->post->content_en_status === 'pending';
     }
 
     public function generateAiComment()
@@ -537,18 +535,21 @@ new class extends Component {
                         wire:click="generateEnglishVersion"
                         wire:loading.attr="disabled"
                         wire:target="generateEnglishVersion"
+                        @if($post->content_en_status === 'pending') disabled @endif
                         class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
                     >
-                        <span wire:loading.remove wire:target="generateEnglishVersion">
-                            {{ $post->content_en ? '🔄 Retraduzir' : '🌐 Gerar versão EN' }}
-                        </span>
-                        <span wire:loading wire:target="generateEnglishVersion" class="flex items-center gap-2">
-                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                            </svg>
+                        @if($post->content_en_status === 'pending')
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
                             Traduzindo…
-                        </span>
+                        @else
+                            <span wire:loading.remove wire:target="generateEnglishVersion">
+                                {{ $post->content_en ? '🔄 Retraduzir' : '🌐 Gerar versão EN' }}
+                            </span>
+                            <span wire:loading wire:target="generateEnglishVersion" class="flex items-center gap-2">
+                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                                Enviando…
+                            </span>
+                        @endif
                     </button>
                 </div>
 
