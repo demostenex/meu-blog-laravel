@@ -9,6 +9,31 @@ use Illuminate\Support\Facades\Http;
 
 class GeminiService
 {
+    public function translateText(string $text, User $user): string
+    {
+        $model  = $user->gemini_model ?? 'gemini-2.0-flash';
+        $apiKey = $user->gemini_api_key;
+
+        $prompt = <<<PROMPT
+Translate the following text to English. Preserve the meaning, tone, and paragraph structure. Return only the translated text, without any explanation or commentary.
+
+{$text}
+PROMPT;
+
+        $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
+            ->timeout(120)
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+                'contents' => [
+                    ['parts' => [['text' => $prompt]]],
+                ],
+            ]);
+
+        $response->throw();
+
+        return $response->json('candidates.0.content.parts.0.text')
+            ?? throw new \RuntimeException('Unexpected response from Gemini API.');
+    }
+
     public function generateComment(Post $post, User $user): AiComment
     {
         $persona = $post->user->gemini_persona

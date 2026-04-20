@@ -6,8 +6,9 @@ use App\Models\Post;
 
 new #[Layout('layouts.blog')] class extends Component {
     public Post $post;
+    public string $lang = 'pt';
 
-    public function mount(Post $post)
+    public function mount(Post $post): void
     {
         $this->post = $post->load('category', 'tags');
 
@@ -19,6 +20,11 @@ new #[Layout('layouts.blog')] class extends Component {
         if (! auth()->check() || auth()->id() !== $post->user_id) {
             $post->incrementViews();
         }
+    }
+
+    public function switchLang(string $lang): void
+    {
+        $this->lang = in_array($lang, ['pt', 'en']) ? $lang : 'pt';
     }
 }; ?>
 
@@ -137,6 +143,23 @@ new #[Layout('layouts.blog')] class extends Component {
                     <span>&bull;</span>
                     <span>{{ $post->reading_time }} min de leitura</span>
                 </div>
+
+                <!-- Botão de tradução -->
+                <!-- Botão toggle de idioma (só aparece se versão EN existe) -->
+                @if($post->content_en)
+                <div class="mt-4 flex justify-center lg:justify-start">
+                    <div class="inline-flex rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden text-xs font-semibold">
+                        <button wire:click="switchLang('pt')"
+                                class="px-4 py-1.5 transition-colors {{ $lang === 'pt' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800' }}">
+                            🇧🇷 Português
+                        </button>
+                        <button wire:click="switchLang('en')"
+                                class="px-4 py-1.5 transition-colors {{ $lang === 'en' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800' }}">
+                            🇺🇸 English
+                        </button>
+                    </div>
+                </div>
+                @endif
             </header>
 
             <!-- Imagem de Capa -->
@@ -155,6 +178,9 @@ new #[Layout('layouts.blog')] class extends Component {
                 #article-content p { margin-bottom: 1.5rem; }
             </style>
             <div id="article-content" class="trix-content text-gray-800 dark:text-gray-200 leading-relaxed text-base sm:text-lg selection:bg-blue-100 dark:selection:bg-blue-900">
+                @if($lang === 'en' && $post->content_en)
+                    <div class="whitespace-pre-wrap">{{ $post->content_en }}</div>
+                @else
                 @php
                     $contentWithVideos = preg_replace_callback(
                         '/\[\[video:(https?:\/\/[^\]\s]+)\]\]/i',
@@ -178,6 +204,7 @@ new #[Layout('layouts.blog')] class extends Component {
                     );
                 @endphp
                 {!! $renderedContent !!}
+                @endif
             </div>
         </article>
 
@@ -217,7 +244,7 @@ new #[Layout('layouts.blog')] class extends Component {
                             <p class="text-xs text-gray-400">Opinião não solicitada &bull; <span class="italic">powered by {{ $aiComment->model }}</span></p>
                         </div>
                     </div>
-                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{{ $aiComment->content }}</div>
+                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{{ $lang === 'en' && $aiComment->content_en ? $aiComment->content_en : $aiComment->content }}</div>
                 </div>
             @endif
 

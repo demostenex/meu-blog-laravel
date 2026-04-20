@@ -32,6 +32,9 @@ new class extends Component {
     public bool $generatingComment = false;
     public ?string $commentStatus = null;
 
+    public bool $generatingEnglish = false;
+    public ?string $englishStatus = null;
+
     public ?int $category_id = null;
     public array $selectedTagIds = [];
     public string $newTag = '';
@@ -206,6 +209,44 @@ new class extends Component {
             $this->coverStatus = 'error:' . $e->getMessage();
         } finally {
             $this->generatingCover = false;
+        }
+    }
+
+    public function generateEnglishVersion(): void
+    {
+        $user = auth()->user();
+
+        if (! $user->gemini_api_key) {
+            $this->englishStatus = 'error:Configure a chave de API do Gemini no seu perfil primeiro.';
+            return;
+        }
+
+        $this->generatingEnglish = true;
+        $this->englishStatus = null;
+
+        try {
+            $service = app(GeminiService::class);
+
+            $titleEn   = $service->translateText($this->post->title, $user);
+            $contentEn = $service->translateText(\Str::limit(strip_tags($this->post->content), 8000), $user);
+
+            $this->post->update([
+                'title_en'   => $titleEn,
+                'content_en' => $contentEn,
+            ]);
+
+            if ($this->post->latestAiComment) {
+                $this->post->latestAiComment->update([
+                    'content_en' => $service->translateText($this->post->latestAiComment->content, $user),
+                ]);
+            }
+
+            $this->post->refresh();
+            $this->englishStatus = 'success';
+        } catch (\Throwable $e) {
+            $this->englishStatus = 'error:' . $e->getMessage();
+        } finally {
+            $this->generatingEnglish = false;
         }
     }
 
@@ -482,6 +523,48 @@ new class extends Component {
                     </div>
                 @else
                     <p class="text-sm text-gray-400 italic">Nenhum comentário gerado ainda.</p>
+                @endif
+            </div>
+
+            <!-- Versão em Inglês -->
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">🌐 Versão em Inglês</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">A IA traduz o título, conteúdo e comentário da IA para inglês. Os leitores podem alternar entre os idiomas.</p>
+                    </div>
+                    <button
+                        wire:click="generateEnglishVersion"
+                        wire:loading.attr="disabled"
+                        wire:target="generateEnglishVersion"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
+                    >
+                        <span wire:loading.remove wire:target="generateEnglishVersion">
+                            {{ $post->content_en ? '🔄 Retraduzir' : '🌐 Gerar versão EN' }}
+                        </span>
+                        <span wire:loading wire:target="generateEnglishVersion" class="flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                            </svg>
+                            Traduzindo…
+                        </span>
+                    </button>
+                </div>
+
+                @if ($englishStatus === 'success')
+                    <p class="text-sm text-green-600 dark:text-green-400 mb-3">✅ Versão em inglês gerada com sucesso!</p>
+                @elseif ($englishStatus && str_starts_with($englishStatus, 'error:'))
+                    <p class="text-sm text-red-600 dark:text-red-400 mb-3">❌ {{ str_replace('error:', '', $englishStatus) }}</p>
+                @endif
+
+                @if ($post->content_en)
+                    <div class="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4">
+                        <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">{{ $post->title_en }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 whitespace-pre-wrap">{{ \Str::limit($post->content_en, 300) }}</p>
+                    </div>
+                @else
+                    <p class="text-sm text-gray-400 italic">Nenhuma versão em inglês gerada ainda.</p>
                 @endif
             </div>
         </div>

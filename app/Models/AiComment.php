@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['post_id', 'content', 'model'])]
+#[Fillable(['post_id', 'content', 'content_en', 'model'])]
 class AiComment extends Model
 {
     public function post(): BelongsTo
