@@ -75,6 +75,12 @@ class BackupRun extends Command
 
     private function dumpDatabase(string $dir, string $timestamp): string|false
     {
+        exec('which pg_dump 2>/dev/null', $_, $whichCode);
+        if ($whichCode !== 0) {
+            $this->error('❌ pg_dump não encontrado. Instale postgresql-client no container.');
+            return false;
+        }
+
         $config   = config('database.connections.pgsql');
         $path     = "{$dir}/db_{$timestamp}.sql.gz";
         $host     = $config['host'];
@@ -83,8 +89,9 @@ class BackupRun extends Command
         $user     = $config['username'];
         $password = $config['password'];
 
+        // Usa bash com pipefail para propagar falha do pg_dump (sh não suporta pipefail)
         $cmd = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -p %s -U %s %s | gzip > %s 2>&1',
+            'bash -c "set -o pipefail; PGPASSWORD=%s pg_dump -h %s -p %s -U %s %s | gzip > %s" 2>&1',
             escapeshellarg($password),
             escapeshellarg($host),
             escapeshellarg($port),
@@ -95,7 +102,7 @@ class BackupRun extends Command
 
         exec($cmd, $output, $exitCode);
 
-        if ($exitCode !== 0 || ! file_exists($path) || filesize($path) === 0) {
+        if ($exitCode !== 0 || ! file_exists($path) || filesize($path) < 100) {
             return false;
         }
 
