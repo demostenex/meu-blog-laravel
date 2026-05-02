@@ -96,7 +96,7 @@ new class extends Component
 
         if ($this->photo) {
             if ($user->profile_photo_path) {
-                Storage::disk('public')->delete($user->profile_photo_path);
+                Storage::disk(config('filesystems.image_disk', 'public'))->delete($user->profile_photo_path);
             }
             $user->profile_photo_path = app(ImageService::class)->storeCompressed($this->photo, 'profiles', 400, 400, 85);
         }
@@ -107,12 +107,12 @@ new class extends Component
                 ->read($this->favicon->getRealPath())
                 ->scaleDown(256, 256)
                 ->toPng();
-            Storage::disk('public')->put('favicon.png', (string) $encoded);
+            Storage::disk(config('filesystems.image_disk', 'public'))->put('favicon.png', (string) $encoded);
         }
 
         if ($this->gemini_ai_photo) {
             if ($user->gemini_ai_photo) {
-                Storage::disk('public')->delete($user->gemini_ai_photo);
+                Storage::disk(config('filesystems.image_disk', 'public'))->delete($user->gemini_ai_photo);
             }
             $user->gemini_ai_photo = app(ImageService::class)->storeCompressed($this->gemini_ai_photo, 'ai-avatars', 400, 400, 85);
         }
@@ -167,7 +167,7 @@ new class extends Component
                         @if ($photo)
                             <img class="h-12 w-12 object-cover rounded-full" src="{{ $photo->temporaryUrl() }}" alt="Nova foto de perfil">
                         @elseif (Auth::user()->profile_photo_path)
-                            <img class="h-12 w-12 object-cover rounded-full" src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
+                            <img class="h-12 w-12 object-cover rounded-full" src="{{ image_url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}">
                         @else
                             <img class="h-12 w-12 object-cover rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=7F9CF5&background=EBF4FF" alt="{{ Auth::user()->name }}">
                         @endif
@@ -184,8 +184,8 @@ new class extends Component
                     <div class="shrink-0 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
                         @if ($favicon)
                             <img class="h-8 w-8 object-contain" src="{{ $favicon->temporaryUrl() }}" alt="Novo Favicon">
-                        @elseif (file_exists(public_path('storage/favicon.png')))
-                            <img class="h-8 w-8 object-contain" src="{{ asset('storage/favicon.png') }}?v={{ time() }}" alt="Favicon Atual">
+                        @elseif (Storage::disk(config('filesystems.image_disk', 'public'))->exists('favicon.png'))
+                            <img class="h-8 w-8 object-contain" src="{{ image_url('favicon.png') }}?v={{ time() }}" alt="Favicon Atual">
                         @else
                             <div class="h-8 w-8 flex items-center justify-center text-gray-400">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -343,7 +343,7 @@ new class extends Component
                     @if ($gemini_ai_photo)
                         <img class="h-12 w-12 object-cover rounded-full" src="{{ $gemini_ai_photo->temporaryUrl() }}" alt="Avatar da IA">
                     @elseif (Auth::user()->gemini_ai_photo)
-                        <img class="h-12 w-12 object-cover rounded-full" src="{{ asset('storage/' . Auth::user()->gemini_ai_photo) }}" alt="{{ Auth::user()->gemini_ai_name }}">
+                        <img class="h-12 w-12 object-cover rounded-full" src="{{ image_url(Auth::user()->gemini_ai_photo) }}" alt="{{ Auth::user()->gemini_ai_name }}">
                     @else
                         <div class="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-2xl">🤖</div>
                     @endif

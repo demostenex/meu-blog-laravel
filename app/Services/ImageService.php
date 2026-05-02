@@ -41,7 +41,7 @@ class ImageService
         $path      = $directory . '/' . $filename;
         $encoded   = $image->toWebp($quality);
 
-        Storage::disk('public')->put($path, (string) $encoded);
+        Storage::disk(config('filesystems.image_disk', 'public'))->put($path, (string) $encoded);
 
         return $path;
     }
@@ -76,7 +76,7 @@ class ImageService
             $path     = $directory . '/' . $filename;
             $encoded  = $image->toWebp($quality);
 
-            Storage::disk('public')->put($path, (string) $encoded);
+            Storage::disk(config('filesystems.image_disk', 'public'))->put($path, (string) $encoded);
         } finally {
             @unlink($tmpPath);
         }

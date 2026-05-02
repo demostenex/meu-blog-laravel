@@ -37,7 +37,7 @@ new #[Layout('layouts.blog')] class extends Component {
             <!-- Foto Flutuante do Autor (Centralizada de forma perfeita) -->
             <div class="relative -mt-24 mb-6">
                 @if($user->profile_photo_path)
-                    <img src="{{ asset('storage/' . $user->profile_photo_path) }}" class="w-48 h-48 rounded-full border-8 border-white dark:border-gray-800 shadow-2xl object-cover bg-white" alt="{{ $user->name }}">
+                    <img src="{{ image_url($user->profile_photo_path) }}" class="w-48 h-48 rounded-full border-8 border-white dark:border-gray-800 shadow-2xl object-cover bg-white" alt="{{ $user->name }}">
                 @else
                     <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&color=7F9CF5&background=EBF4FF&size=512" class="w-48 h-48 rounded-full border-8 border-white dark:border-gray-800 shadow-2xl bg-white" alt="{{ $user->name }}">
                 @endif

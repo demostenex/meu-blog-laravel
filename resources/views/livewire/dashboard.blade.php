@@ -2,11 +2,17 @@
 
 use Livewire\Volt\Component;
 use App\Models\Post;
+use Illuminate\Support\Facades\Artisan;
 
 new class extends Component {
     public int $totalPosts = 0;
     public int $totalViews = 0;
     public $topPosts;
+
+    // R2 sync
+    public bool $syncing    = false;
+    public string $syncLog  = '';
+    public string $syncStatus = ''; // 'success' | 'error' | ''
 
     public function mount(): void
     {
@@ -16,6 +22,24 @@ new class extends Component {
             ->orderByDesc('views_count')
             ->limit(5)
             ->get(['id', 'title', 'slug', 'views_count', 'created_at']);
+    }
+
+    public function syncToR2(): void
+    {
+        $this->syncing    = true;
+        $this->syncLog    = '';
+        $this->syncStatus = '';
+
+        try {
+            Artisan::call('media:sync-to-r2', ['--force' => true]);
+            $this->syncLog    = Artisan::output();
+            $this->syncStatus = 'success';
+        } catch (\Throwable $e) {
+            $this->syncLog    = $e->getMessage();
+            $this->syncStatus = 'error';
+        }
+
+        $this->syncing = false;
     }
 }; ?>
 
@@ -75,6 +99,47 @@ new class extends Component {
                         <p class="px-6 py-8 text-sm text-gray-400 text-center italic">Nenhum post ainda. <a href="{{ route('posts.create') }}" class="text-blue-500 hover:underline">Crie o primeiro!</a></p>
                     @endforelse
                 </div>
+            </div>
+
+            <!-- Sincronização R2 -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-gray-100">☁️ Cloudflare R2 — Sincronizar Assets</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Envia todas as imagens e vídeos locais para o R2. Não regenera nada, apenas copia.
+                            @if(config('filesystems.image_disk') === 'r2')
+                                <span class="ml-2 text-green-600 dark:text-green-400 font-semibold">● R2 ativo</span>
+                            @else
+                                <span class="ml-2 text-yellow-600 dark:text-yellow-400 font-semibold">● Disco local ativo (IMAGE_DISK=public)</span>
+                            @endif
+                        </p>
+                    </div>
+                    <button wire:click="syncToR2"
+                            wire:loading.attr="disabled"
+                            @disabled($syncing)
+                            class="shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors">
+                        <span wire:loading.remove wire:target="syncToR2">Sincronizar para R2</span>
+                        <span wire:loading wire:target="syncToR2" class="flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Enviando...
+                        </span>
+                    </button>
+                </div>
+
+                @if($syncLog)
+                    <div class="px-6 py-4">
+                        <div class="rounded-lg p-4 font-mono text-xs whitespace-pre-wrap leading-relaxed
+                                    {{ $syncStatus === 'success'
+                                        ? 'bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'
+                                        : 'bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' }}">
+                            {{ $syncLog }}
+                        </div>
+                    </div>
+                @endif
             </div>
 
         </div>

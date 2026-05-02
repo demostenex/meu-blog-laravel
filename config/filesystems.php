@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Disco de Mídia (imagens e vídeos públicos)
+    |--------------------------------------------------------------------------
+    |
+    | Controla onde capas, fotos de perfil e outros assets são armazenados.
+    | Troque IMAGE_DISK=r2 no .env para usar o Cloudflare R2 sem alterar código.
+    |
+    */
+
+    'image_disk' => env('IMAGE_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -56,6 +68,19 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BUCKET'),
+            'url' => env('R2_URL'),         // URL pública do bucket (ex: https://pub-xxx.r2.dev ou domínio custom)
+            'endpoint' => env('R2_ENDPOINT'), // https://<account_id>.r2.cloudflarestorage.com
+            'use_path_style_endpoint' => true, // obrigatório para R2
             'throw' => false,
             'report' => false,
         ],

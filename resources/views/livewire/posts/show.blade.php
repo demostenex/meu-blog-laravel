@@ -43,14 +43,14 @@ new #[Layout('layouts.blog')] class extends Component {
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ route('posts.show', $post->slug) }}">
     @if($post->cover_image)
-        <meta property="og:image" content="{{ secure_asset('storage/' . $post->cover_image) }}">
-        <meta property="og:image:secure_url" content="{{ secure_asset('storage/' . $post->cover_image) }}">
+        <meta property="og:image" content="{{ image_url($post->cover_image) }}">
+        <meta property="og:image:secure_url" content="{{ image_url($post->cover_image) }}">
         <meta property="og:image:type" content="image/{{ pathinfo($post->cover_image, PATHINFO_EXTENSION) }}">
         <meta property="og:image:width" content="1200">
         <meta property="og:image:height" content="630">
-        <meta itemprop="image" content="{{ secure_asset('storage/' . $post->cover_image) }}">
+        <meta itemprop="image" content="{{ image_url($post->cover_image) }}">
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:image" content="{{ secure_asset('storage/' . $post->cover_image) }}">
+        <meta name="twitter:image" content="{{ image_url($post->cover_image) }}">
     @else
         <meta name="twitter:card" content="summary">
     @endif
@@ -77,7 +77,7 @@ new #[Layout('layouts.blog')] class extends Component {
         ],
     ];
     if ($post->cover_image) {
-        $jsonLd['image'] = secure_asset('storage/' . $post->cover_image);
+        $jsonLd['image'] = image_url($post->cover_image);
     }
     echo json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     @endphp
@@ -132,7 +132,7 @@ new #[Layout('layouts.blog')] class extends Component {
                 <div class="flex items-center justify-center lg:justify-start gap-3 text-sm text-gray-500 dark:text-gray-400">
                     <a href="{{ route('author.show', $post->user) }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         @if($post->user->profile_photo_path)
-                            <img src="{{ asset('storage/' . $post->user->profile_photo_path) }}" class="w-8 h-8 rounded-full object-cover" alt="{{ $post->user->name }}">
+                            <img src="{{ image_url($post->user->profile_photo_path) }}" class="w-8 h-8 rounded-full object-cover" alt="{{ $post->user->name }}">
                         @else
                             <img src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&color=7F9CF5&background=EBF4FF" class="w-8 h-8 rounded-full" alt="{{ $post->user->name }}">
                         @endif
@@ -166,7 +166,7 @@ new #[Layout('layouts.blog')] class extends Component {
             <!-- Imagem de Capa -->
             @if($post->cover_image)
                 <div class="mb-12">
-                    <img src="{{ asset('storage/' . $post->cover_image) }}" alt="{{ $post->title }}" class="w-full rounded-2xl shadow-xl object-cover max-h-[500px]">
+                    <img src="{{ image_url($post->cover_image) }}" alt="{{ $post->title }}" class="w-full rounded-2xl shadow-xl object-cover max-h-[500px]">
                 </div>
             @endif
 
@@ -226,7 +226,7 @@ new #[Layout('layouts.blog')] class extends Component {
                     $borderStyle = "rgba($r,$g,$b,0.35)";
                     $accentColor = '#' . $hex;
                     $aiName      = $aiUser->gemini_ai_name ?: 'BOT Sarcástico';
-                    $aiPhoto     = $aiUser->gemini_ai_photo ? asset('storage/' . $aiUser->gemini_ai_photo) : '';
+                    $aiPhoto     = $aiUser->gemini_ai_photo ? image_url($aiUser->gemini_ai_photo) : '';
                 @endphp
                 <div id="ai-comment-section"
                      data-ai-name="{{ $aiName }}"
@@ -236,7 +236,7 @@ new #[Layout('layouts.blog')] class extends Component {
                      class="mb-12 rounded-2xl border p-6">
                     <div class="flex items-center gap-3 mb-4">
                         @if($aiUser->gemini_ai_photo)
-                            <img src="{{ asset('storage/' . $aiUser->gemini_ai_photo) }}" class="w-10 h-10 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
+                            <img src="{{ image_url($aiUser->gemini_ai_photo) }}" class="w-10 h-10 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
                         @else
                             <div class="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-xl">🤖</div>
                         @endif

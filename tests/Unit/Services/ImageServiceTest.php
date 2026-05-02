@@ -11,6 +11,8 @@ class ImageServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Força disco 'public' para os testes base, independente do IMAGE_DISK do .env
+        config(['filesystems.image_disk' => 'public']);
         Storage::fake('public');
     }
 
@@ -48,6 +50,57 @@ class ImageServiceTest extends TestCase
         $path = $service->storeFromBase64($base64, 'thumbnails');
 
         $this->assertStringStartsWith('thumbnails/', $path);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function store_from_base64_uses_r2_disk_when_configured(): void
+    {
+        Storage::fake('r2');
+        config(['filesystems.image_disk' => 'r2']);
+
+        $service = app(ImageService::class);
+        $base64  = $this->createMinimalPngBase64();
+
+        $path = $service->storeFromBase64($base64, 'covers');
+
+        $this->assertStringStartsWith('covers/', $path);
+        Storage::disk('r2')->assertExists($path);
+        // Não deve ter ido para o disco público
+        Storage::disk('public')->assertMissing($path);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function store_compressed_uses_r2_disk_when_configured(): void
+    {
+        Storage::fake('r2');
+        config(['filesystems.image_disk' => 'r2']);
+
+        $service = app(ImageService::class);
+        $file    = $this->createUploadedImageFile();
+
+        $path = $service->storeCompressed($file, 'profiles', 100, 100);
+
+        $this->assertStringStartsWith('profiles/', $path);
+        Storage::disk('r2')->assertExists($path);
+    }
+
+    protected function tearDown(): void
+    {
+        config(['filesystems.image_disk' => 'public']);
+        parent::tearDown();
+    }
+
+    private function createUploadedImageFile(): \Illuminate\Http\UploadedFile
+    {
+        $tmpPath = sys_get_temp_dir() . '/test_image_' . uniqid() . '.png';
+
+        $im  = imagecreatetruecolor(10, 10);
+        $red = imagecolorallocate($im, 255, 0, 0);
+        imagefill($im, 0, 0, $red);
+        imagepng($im, $tmpPath);
+        imagedestroy($im);
+
+        return new \Illuminate\Http\UploadedFile($tmpPath, 'test.png', 'image/png', null, true);
     }
 
     /**

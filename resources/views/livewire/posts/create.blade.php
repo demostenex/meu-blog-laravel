@@ -78,15 +78,15 @@ new class extends Component {
     {
         $this->validate(['trixImage' => 'required|image|max:5120']);
         $path = app(ImageService::class)->storeCompressed($this->trixImage, 'post-images', 1200, 1200, 80);
-        $this->dispatch('trix-image-ready', url: asset('storage/' . $path));
+        $this->dispatch('trix-image-ready', url: image_url($path));
         $this->trixImage = null;
     }
 
     public function storeTrixVideo(): void
     {
         $this->validate(['trixVideo' => 'required|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400']);
-        $path = $this->trixVideo->store('post-videos', 'public');
-        $this->dispatch('trix-video-ready', url: asset('storage/' . $path));
+        $path = $this->trixVideo->store('post-videos', config('filesystems.image_disk', 'public'));
+        $this->dispatch('trix-video-ready', url: image_url($path));
         $this->trixVideo = null;
     }
 
@@ -136,7 +136,7 @@ new class extends Component {
 
         try {
             if ($this->ai_generated_cover_path) {
-                Storage::disk('public')->delete($this->ai_generated_cover_path);
+                Storage::disk(config('filesystems.image_disk', 'public'))->delete($this->ai_generated_cover_path);
                 $this->ai_generated_cover_path = null;
             }
 
@@ -243,7 +243,7 @@ new class extends Component {
                         @elseif ($ai_generated_cover_path)
                             <div class="mt-2 mb-2">
                                 <span class="block text-sm text-gray-500 mb-1">Capa gerada pela IA:</span>
-                                <img src="{{ asset('storage/' . $ai_generated_cover_path) }}" class="rounded-lg shadow-sm max-h-48 object-cover">
+                                <img src="{{ image_url($ai_generated_cover_path) }}" class="rounded-lg shadow-sm max-h-48 object-cover">
                             </div>
                         @endif
 

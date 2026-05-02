@@ -8,7 +8,7 @@
         <title>{{ config('app.name', 'Blog') }}</title>
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('storage/favicon.png') }}?v={{ time() }}">
+        <link rel="icon" type="image/png" href="{{ image_url('favicon.png') }}?v={{ time() }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

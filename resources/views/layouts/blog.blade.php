@@ -11,7 +11,7 @@
         @stack('meta')
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('storage/favicon.png') }}?v={{ time() }}">
+        <link rel="icon" type="image/png" href="{{ image_url('favicon.png') }}?v={{ time() }}">
 
         <!-- Feed RSS (autodiscovery) -->
         <link rel="alternate" type="application/rss+xml" title="{{ config('app.name') }}" href="{{ route('feed') }}">

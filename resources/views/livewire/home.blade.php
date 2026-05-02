@@ -134,7 +134,7 @@ new #[Layout('layouts.blog')] class extends Component {
                             <!-- Foto do Artigo -->
                             <a href="{{ route('posts.show', $post->slug) }}" class="shrink-0 w-full sm:w-48 h-32 overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
                                 @if($post->cover_image)
-                                    <img src="{{ asset('storage/' . $post->cover_image) }}" alt="{{ $post->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                    <img src="{{ image_url($post->cover_image) }}" alt="{{ $post->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:scale-105 transition-transform duration-500">
                                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -150,7 +150,7 @@ new #[Layout('layouts.blog')] class extends Component {
                                     <!-- Link do Autor -->
                                     <a href="{{ route('author.show', $post->user) }}" class="flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
                                         @if($post->user->profile_photo_path)
-                                            <img src="{{ asset('storage/' . $post->user->profile_photo_path) }}" class="w-5 h-5 rounded-full object-cover" alt="{{ $post->user->name }}">
+                                            <img src="{{ image_url($post->user->profile_photo_path) }}" class="w-5 h-5 rounded-full object-cover" alt="{{ $post->user->name }}">
                                         @else
                                             <img src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&color=7F9CF5&background=EBF4FF" class="w-5 h-5 rounded-full" alt="{{ $post->user->name }}">
                                         @endif

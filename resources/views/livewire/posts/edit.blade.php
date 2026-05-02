@@ -105,15 +105,15 @@ new class extends Component {
     {
         $this->validate(['trixImage' => 'required|image|max:5120']);
         $path = app(ImageService::class)->storeCompressed($this->trixImage, 'post-images', 1200, 1200, 80);
-        $this->dispatch('trix-image-ready', url: asset('storage/' . $path));
+        $this->dispatch('trix-image-ready', url: image_url($path));
         $this->trixImage = null;
     }
 
     public function storeTrixVideo(): void
     {
         $this->validate(['trixVideo' => 'required|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400']);
-        $path = $this->trixVideo->store('post-videos', 'public');
-        $this->dispatch('trix-video-ready', url: asset('storage/' . $path));
+        $path = $this->trixVideo->store('post-videos', config('filesystems.image_disk', 'public'));
+        $this->dispatch('trix-video-ready', url: image_url($path));
         $this->trixVideo = null;
     }
 
@@ -132,7 +132,7 @@ new class extends Component {
 
         if ($this->cover_image) {
             if ($this->existing_cover_image) {
-                Storage::disk('public')->delete($this->existing_cover_image);
+                Storage::disk(config('filesystems.image_disk', 'public'))->delete($this->existing_cover_image);
             }
             $imagePath = app(ImageService::class)->storeCompressed($this->cover_image, 'covers', 1920, 1080);
         }
@@ -197,7 +197,7 @@ new class extends Component {
             $this->post->refresh();
 
             if ($this->existing_cover_image) {
-                Storage::disk('public')->delete($this->existing_cover_image);
+                Storage::disk(config('filesystems.image_disk', 'public'))->delete($this->existing_cover_image);
             }
 
             $path = app(ImagenService::class)->generateCoverImage($this->post, $user);
@@ -359,7 +359,7 @@ new class extends Component {
                         @elseif ($existing_cover_image)
                             <div class="mt-2 mb-2">
                                 <span class="block text-sm text-gray-500 mb-1">Imagem atual:</span>
-                                <img src="{{ asset('storage/' . $existing_cover_image) }}" class="rounded-lg shadow-sm max-h-48 object-cover">
+                                <img src="{{ image_url($existing_cover_image) }}" class="rounded-lg shadow-sm max-h-48 object-cover">
                             </div>
                         @endif
 
@@ -508,7 +508,7 @@ new class extends Component {
                     <div class="border border-purple-200 dark:border-purple-800 rounded-xl p-4 bg-purple-50 dark:bg-purple-950/30">
                         <div class="flex items-center gap-3 mb-3">
                             @if($aiUser->gemini_ai_photo)
-                                <img src="{{ asset('storage/' . $aiUser->gemini_ai_photo) }}" class="w-9 h-9 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
+                                <img src="{{ image_url($aiUser->gemini_ai_photo) }}" class="w-9 h-9 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
                             @else
                                 <div class="w-9 h-9 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-lg">🤖</div>
                             @endif

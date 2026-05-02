@@ -16,7 +16,7 @@
             <description><![CDATA[{{ Str::limit(strip_tags($post->content), 300) }}]]></description>
             <content:encoded><![CDATA[{!! $post->content !!}]]></content:encoded>
             @if($post->cover_image)
-            <enclosure url="{{ asset('storage/' . $post->cover_image) }}" type="image/jpeg"/>
+            <enclosure url="{{ image_url($post->cover_image) }}" type="image/jpeg"/>
             @endif
         </item>
         @endforeach
