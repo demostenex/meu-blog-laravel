@@ -2,27 +2,24 @@
 
 namespace App\Services;
 
-use App\Models\Post;
-use App\Models\User;
 use App\Models\AiComment;
+use App\Models\Post;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
-class GeminiService
+class GeminiService extends AbstractAiService
 {
-    public function translateText(string $text, User $user): string
+    public function __construct(
+        private readonly string $apiKey,
+        private readonly string $model,
+        private readonly ?string $persona = null,
+    ) {}
+
+    public function generateText(string $prompt): string
     {
-        $model  = $user->gemini_model ?? 'gemini-2.0-flash';
-        $apiKey = $user->gemini_api_key;
-
-        $prompt = <<<PROMPT
-Translate the following text to English. Preserve the meaning, tone, and paragraph structure. Return only the translated text, without any explanation or commentary.
-
-{$text}
-PROMPT;
-
         $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
             ->timeout(120)
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}", [
                 'contents' => [
                     ['parts' => [['text' => $prompt]]],
                 ],
@@ -34,52 +31,49 @@ PROMPT;
             ?? throw new \RuntimeException('Unexpected response from Gemini API.');
     }
 
-    /**
-     * Translates HTML content to English while preserving all URLs (href/src).
-     * URLs are replaced with numbered placeholders before sending to the API
-     * and restored afterwards, so the AI never sees or modifies real links.
-     */
-    public function translateHtml(string $html, User $user): string
+    public function translateText(string $text): string
     {
-        $urls    = [];
-        $counter = 0;
+        return $this->generateText(<<<PROMPT
+Translate the following text to English. Preserve the meaning, tone, and paragraph structure. Return only the translated text, without any explanation or commentary.
 
-        // Replace every href and src value with a placeholder
-        $withPlaceholders = preg_replace_callback(
-            '/((?:href|src|data-src)=")([^"]+)(")/i',
-            function ($m) use (&$urls, &$counter) {
-                $counter++;
-                $key         = "TRANSURL{$counter}";
-                $urls[$key]  = $m[2];
-
-                return $m[1] . $key . $m[3];
-            },
-            $html
-        );
-
-        $translated = $this->translateText($withPlaceholders, $user);
-
-        // Restore original URLs
-        foreach ($urls as $key => $url) {
-            $translated = str_replace($key, $url, $translated);
-        }
-
-        return $translated;
+{$text}
+PROMPT);
     }
 
-    public function generateComment(Post $post, User $user): AiComment
+    public function generateComment(Post $post): AiComment
     {
-        $persona = $post->user->gemini_persona
+        $text = $this->generateText($this->buildCommentPrompt($post));
+
+        return $post->aiComments()->create([
+            'content' => $text,
+            'model'   => $this->model,
+        ]);
+    }
+
+    protected function buildCommentPrompt(Post $post): string
+    {
+        $persona = $this->persona
             ?? 'Você é um crítico sarcástico e bem-humorado. Comente o artigo de forma irônica e espirituosa, mas sem ser ofensivo.';
 
-        $model = $post->user->gemini_model ?? 'gemini-2.0-flash';
-        $apiKey = $post->user->gemini_api_key;
+        $articleText = Str::limit(strip_tags($post->content), 8000);
 
-        $articleText = \Str::limit(strip_tags($post->content), 8000);
+        $recentPosts = Post::published()
+            ->where('id', '!=', $post->id)
+            ->latest('published_at')
+            ->limit(5)
+            ->get(['title', 'content']);
 
-        $prompt = <<<PROMPT
+        $memoryBlock = '';
+        if ($recentPosts->isNotEmpty()) {
+            $lines = $recentPosts->map(
+                fn ($p) => '- "' . $p->title . '": ' . Str::limit(strip_tags($p->content), 300)
+            )->join("\n");
+            $memoryBlock = "\n\nOutros artigos do blog que você já leu (use para fazer conexões quando relevante):\n{$lines}\n";
+        }
+
+        return <<<PROMPT
 {$persona}
-
+{$memoryBlock}
 Leia o artigo abaixo e faça um comentário curto (máximo 3 parágrafos) sobre ele com sua persona.
 
 Título: {$post->title}
@@ -87,23 +81,5 @@ Título: {$post->title}
 Conteúdo:
 {$articleText}
 PROMPT;
-
-        $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
-            ->timeout(120)
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
-                'contents' => [
-                    ['parts' => [['text' => $prompt]]],
-                ],
-            ]);
-
-        $response->throw();
-
-        $text = $response->json('candidates.0.content.parts.0.text')
-            ?? throw new \RuntimeException('Resposta inesperada da API do Gemini.');
-
-        return $post->aiComments()->create([
-            'content' => $text,
-            'model'   => $model,
-        ]);
     }
 }

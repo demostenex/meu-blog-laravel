@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Volt\Component;
+use App\Models\PageView;
 use App\Models\Post;
 use Illuminate\Support\Facades\Artisan;
 
@@ -8,6 +9,14 @@ new class extends Component {
     public int $totalPosts = 0;
     public int $totalViews = 0;
     public $topPosts;
+
+    // Analytics
+    public int $views7d     = 0;
+    public int $unique7d    = 0;
+    public int $views30d    = 0;
+    public array $topPages      = [];
+    public array $topReferrers  = [];
+    public array $devices       = [];
 
     // R2 sync
     public bool $syncing    = false;
@@ -22,6 +31,38 @@ new class extends Component {
             ->orderByDesc('views_count')
             ->limit(5)
             ->get(['id', 'title', 'slug', 'views_count', 'created_at']);
+
+        $since7  = now()->subDays(7);
+        $since30 = now()->subDays(30);
+
+        $this->views7d  = PageView::where('created_at', '>=', $since7)->count();
+        $this->views30d = PageView::where('created_at', '>=', $since30)->count();
+        $this->unique7d = PageView::where('created_at', '>=', $since7)
+            ->distinct('ip_hash')->count('ip_hash');
+
+        $this->topPages = PageView::where('created_at', '>=', $since7)
+            ->selectRaw('path, count(*) as total')
+            ->groupBy('path')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->pluck('total', 'path')
+            ->toArray();
+
+        $this->topReferrers = PageView::where('created_at', '>=', $since7)
+            ->whereNotNull('referrer')
+            ->selectRaw('referrer, count(*) as total')
+            ->groupBy('referrer')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->pluck('total', 'referrer')
+            ->toArray();
+
+        $this->devices = PageView::where('created_at', '>=', $since7)
+            ->selectRaw('device, count(*) as total')
+            ->groupBy('device')
+            ->orderByDesc('total')
+            ->pluck('total', 'device')
+            ->toArray();
     }
 
     public function syncToR2(): void
@@ -70,6 +111,71 @@ new class extends Component {
                         <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($totalViews, 0, ',', '.') }}</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Analytics Soberano -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">📊 Analytics (últimos 7 dias)</h3>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-gray-700">
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($views7d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pageviews</p>
+                    </div>
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ number_format($unique7d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Visitantes únicos</p>
+                    </div>
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ number_format($views30d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Views no mês</p>
+                    </div>
+                </div>
+
+                @if(count($topPages) > 0 || count($topReferrers) > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
+                    <!-- Top Páginas -->
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Top Páginas</p>
+                        @forelse($topPages as $path => $count)
+                            <div class="flex justify-between items-center py-1.5">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono">/{{ $path }}</span>
+                                <span class="ml-2 shrink-0 text-sm font-semibold text-blue-600 dark:text-blue-400">{{ number_format($count, 0, ',', '.') }}</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 italic">Sem dados</p>
+                        @endforelse
+                    </div>
+
+                    <!-- Top Referrers -->
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Top Referrers</p>
+                        @forelse($topReferrers as $ref => $count)
+                            <div class="flex justify-between items-center py-1.5">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $ref }}</span>
+                                <span class="ml-2 shrink-0 text-sm font-semibold text-purple-600 dark:text-purple-400">{{ number_format($count, 0, ',', '.') }}</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 italic">Sem referrers externos</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                <!-- Dispositivos -->
+                @if(count($devices) > 0)
+                <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex gap-6">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mr-2 self-center">Dispositivos:</p>
+                    @foreach($devices as $device => $count)
+                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                            {{ match($device) { 'desktop' => '🖥️', 'mobile' => '📱', 'tablet' => '📟', default => '❓' } }}
+                            {{ ucfirst($device) }}: <strong>{{ $count }}</strong>
+                        </span>
+                    @endforeach
+                </div>
+                @endif
+                @endif
             </div>
 
             <!-- Posts Mais Visualizados -->

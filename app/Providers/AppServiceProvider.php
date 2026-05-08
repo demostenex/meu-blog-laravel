@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Post;
@@ -11,7 +14,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Services\AiServiceFactory::class);
     }
 
     public function boot(): void
@@ -21,5 +24,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Post::observe(PostObserver::class);
+
+        Event::listen(Login::class, function () {
+            Artisan::call('app:flush-views-buffer');
+        });
     }
 }

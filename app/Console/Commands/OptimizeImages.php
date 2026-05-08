@@ -119,9 +119,9 @@ class OptimizeImages extends Command
             $this->line("    🗄  Atualizado {$updated} registro(s) em users.profile_photo_path");
         }
 
-        $updated = User::where('gemini_ai_photo', $oldPath)->update(['gemini_ai_photo' => $newPath]);
+        $updated = \App\Models\UserAiProvider::where('ai_photo', $oldPath)->update(['ai_photo' => $newPath]);
         if ($updated) {
-            $this->line("    🗄  Atualizado {$updated} registro(s) em users.gemini_ai_photo");
+            $this->line("    🗄  Atualizado {$updated} registro(s) em user_ai_providers.ai_photo");
         }
     }
 }

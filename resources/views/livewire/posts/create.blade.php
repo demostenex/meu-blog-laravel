@@ -126,8 +126,8 @@ new class extends Component {
 
         $user = auth()->user();
 
-        if (! $user->gemini_api_key) {
-            $this->coverStatus = 'error:Configure a chave de API do Gemini no seu perfil primeiro.';
+        if ($user->aiProviders()->doesntExist()) {
+            $this->coverStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
             return;
         }
 

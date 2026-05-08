@@ -17,9 +17,6 @@ new #[Layout('layouts.blog')] class extends Component {
             abort_if(auth()->id() !== $post->user_id, 404);
         }
 
-        if (! auth()->check() || auth()->id() !== $post->user_id) {
-            $post->incrementViews();
-        }
     }
 
     public function switchLang(string $lang): void

@@ -19,9 +19,14 @@ class GenerateAiCoverTest extends TestCase
     {
         parent::setUp();
 
-        $this->user = User::factory()->create([
-            'gemini_api_key' => encrypt('fake-key-test'),
+        $this->user = User::factory()->create();
+
+        $provider = $this->user->aiProviders()->create([
+            'provider'   => 'gemini',
+            'api_key'    => 'fake-key-test',
+            'is_default' => true,
         ]);
+        $provider->models()->create(['model' => 'gemini-2.0-flash', 'is_default' => true]);
     }
 
     #[\PHPUnit\Framework\Attributes\Test]

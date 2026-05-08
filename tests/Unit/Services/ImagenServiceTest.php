@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Services\AiServiceFactory;
 use App\Services\ImagenService;
 use PHPUnit\Framework\TestCase;
 
@@ -11,7 +12,7 @@ class ImagenServiceTest extends TestCase
 {
     private function makeService(): ImagenService
     {
-        return new ImagenService();
+        return new ImagenService($this->createMock(AiServiceFactory::class));
     }
 
     private function makeUser(array $attrs = []): User

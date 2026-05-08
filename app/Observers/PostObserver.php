@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Post;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Spatie\ResponseCache\Facades\ResponseCache;
 
 class PostObserver
 {
@@ -13,6 +14,8 @@ class PostObserver
      */
     public function updated(Post $post): void
     {
+        ResponseCache::clear();
+
         $wasPublished  = $post->getOriginal('published_at') !== null;
         $nowPublished  = $post->published_at !== null;
         $justPublished = $post->wasChanged('published_at') && ! $wasPublished && $nowPublished;
@@ -29,5 +32,10 @@ class PostObserver
         } catch (\Throwable $e) {
             Log::warning("[Sitemap] Falha ao pingar o Google: {$e->getMessage()}");
         }
+    }
+
+    public function deleted(Post $post): void
+    {
+        ResponseCache::clear();
     }
 }

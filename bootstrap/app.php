@@ -12,6 +12,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->alias([
+            'cacheResponse'      => \Spatie\ResponseCache\Middlewares\CacheResponse::class,
+            'doNotCacheResponse' => \Spatie\ResponseCache\Middlewares\DoNotCacheResponse::class,
+            'trackPostView'      => \App\Http\Middleware\TrackPostView::class,
+        ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\TrackPostView::class,
+            \App\Http\Middleware\TrackPageView::class,
+            \Spatie\ResponseCache\Middlewares\CacheResponse::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

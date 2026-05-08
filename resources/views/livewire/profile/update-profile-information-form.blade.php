@@ -24,14 +24,6 @@ new class extends Component
     public $photo;
     public $favicon;
 
-    // Campos Gemini IA
-    public string $gemini_api_key = '';
-    public string $gemini_model = 'gemini-2.0-flash';
-    public string $gemini_ai_name = '';
-    public string $gemini_persona = '';
-    public string $gemini_accent_color = '#7c3aed';
-    public $gemini_ai_photo;
-
     /**
      * Mount the component.
      */
@@ -45,11 +37,6 @@ new class extends Component
         $this->social_instagram = Auth::user()->social_instagram ?? '';
         $this->social_facebook = Auth::user()->social_facebook ?? '';
         $this->social_linkedin = Auth::user()->social_linkedin ?? '';
-        $this->gemini_api_key = Auth::user()->gemini_api_key ?? '';
-        $this->gemini_model = Auth::user()->gemini_model ?? 'gemini-2.0-flash';
-        $this->gemini_ai_name = Auth::user()->gemini_ai_name ?? '';
-        $this->gemini_persona = Auth::user()->gemini_persona ?? '';
-        $this->gemini_accent_color = Auth::user()->gemini_accent_color ?? '#7c3aed';
     }
 
     /**
@@ -70,12 +57,6 @@ new class extends Component
             'social_facebook' => ['nullable', 'url', 'max:255'],
             'social_linkedin' => ['nullable', 'url', 'max:255'],
             'favicon' => ['nullable', 'image', 'mimes:ico,png,jpg,jpeg', 'max:10240'],
-            'gemini_api_key' => ['nullable', 'string', 'max:255'],
-            'gemini_model' => ['nullable', 'string', 'max:100'],
-            'gemini_ai_name' => ['nullable', 'string', 'max:100'],
-            'gemini_persona' => ['nullable', 'string', 'max:5000'],
-            'gemini_accent_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'gemini_ai_photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
         $user->fill([
@@ -87,11 +68,6 @@ new class extends Component
             'social_instagram' => $validated['social_instagram'],
             'social_facebook' => $validated['social_facebook'],
             'social_linkedin' => $validated['social_linkedin'],
-            'gemini_api_key' => $validated['gemini_api_key'],
-            'gemini_model' => $validated['gemini_model'] ?? 'gemini-2.0-flash',
-            'gemini_ai_name' => $validated['gemini_ai_name'],
-            'gemini_persona' => $validated['gemini_persona'],
-            'gemini_accent_color' => $validated['gemini_accent_color'] ?? '#7c3aed',
         ]);
 
         if ($this->photo) {
@@ -108,13 +84,6 @@ new class extends Component
                 ->scaleDown(256, 256)
                 ->toPng();
             Storage::disk(config('filesystems.image_disk', 'public'))->put('favicon.png', (string) $encoded);
-        }
-
-        if ($this->gemini_ai_photo) {
-            if ($user->gemini_ai_photo) {
-                Storage::disk(config('filesystems.image_disk', 'public'))->delete($user->gemini_ai_photo);
-            }
-            $user->gemini_ai_photo = app(ImageService::class)->storeCompressed($this->gemini_ai_photo, 'ai-avatars', 400, 400, 85);
         }
 
         if ($user->isDirty('email')) {
@@ -286,79 +255,16 @@ new class extends Component
         <!-- Separador -->
         <hr class="border-gray-200 dark:border-gray-700">
 
-        <!-- Configurações da IA Comentarista -->
-        <div>
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <span>🤖</span> IA Comentarista (Gemini)
-            </h3>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure o bot que comenta seus posts de forma sarcástica.</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Nome da IA -->
+        <!-- Link para configurações de IA -->
+        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div>
-                <x-input-label for="gemini_ai_name" :value="__('Nome da IA')" />
-                <x-text-input wire:model="gemini_ai_name" id="gemini_ai_name" type="text" class="mt-1 block w-full" placeholder="Ex: BOT Sarcástico" />
-                <x-input-error class="mt-2" :messages="$errors->get('gemini_ai_name')" />
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">🤖 Configurações de IA</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Gerencie seus AI providers, modelos, chaves de API e persona do bot comentarista.</p>
             </div>
-
-            <!-- Cor de destaque -->
-            <div>
-                <x-input-label for="gemini_accent_color" :value="__('Cor do bloco de comentário')" />
-                <div class="flex items-center gap-3 mt-1">
-                    <input type="color" wire:model="gemini_accent_color" id="gemini_accent_color"
-                        class="h-10 w-14 rounded-md border border-gray-300 dark:border-gray-700 cursor-pointer p-0.5 bg-white dark:bg-gray-900" />
-                    <span class="text-sm text-gray-500 dark:text-gray-400 font-mono" x-text="$wire.gemini_accent_color"></span>
-                </div>
-                <x-input-error class="mt-2" :messages="$errors->get('gemini_accent_color')" />
-            </div>
-        </div>
-
-            <!-- Modelo -->
-            <div>
-                <x-input-label for="gemini_model" :value="__('Modelo Gemini')" />
-                <select wire:model="gemini_model" id="gemini_model" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                    <option value="gemini-2.5-pro">gemini-2.5-pro (mais inteligente)</option>
-                    <option value="gemini-2.0-flash">gemini-2.0-flash (rápido)</option>
-                    <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (econômico)</option>
-                    <option value="gemini-1.5-pro">gemini-1.5-pro (mais capaz)</option>
-                    <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                </select>
-                <x-input-error class="mt-2" :messages="$errors->get('gemini_model')" />
-            </div>
-
-        <!-- API Key -->
-        <div>
-            <x-input-label for="gemini_api_key" :value="__('Chave de API do Gemini')" />
-            <x-text-input wire:model="gemini_api_key" id="gemini_api_key" type="password" class="mt-1 block w-full font-mono" placeholder="AIza..." autocomplete="off" />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Obtenha sua chave em <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline">aistudio.google.com</a>.</p>
-            <x-input-error class="mt-2" :messages="$errors->get('gemini_api_key')" />
-        </div>
-
-        <!-- Foto da IA -->
-        <div>
-            <x-input-label for="gemini_ai_photo" :value="__('Avatar da IA')" />
-            <div class="flex items-center gap-4 mt-2">
-                <div class="shrink-0">
-                    @if ($gemini_ai_photo)
-                        <img class="h-12 w-12 object-cover rounded-full" src="{{ $gemini_ai_photo->temporaryUrl() }}" alt="Avatar da IA">
-                    @elseif (Auth::user()->gemini_ai_photo)
-                        <img class="h-12 w-12 object-cover rounded-full" src="{{ image_url(Auth::user()->gemini_ai_photo) }}" alt="{{ Auth::user()->gemini_ai_name }}">
-                    @else
-                        <div class="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-2xl">🤖</div>
-                    @endif
-                </div>
-                <input type="file" wire:model="gemini_ai_photo" accept="image/*" class="block w-full text-xs text-gray-500" />
-            </div>
-            <x-input-error class="mt-2" :messages="$errors->get('gemini_ai_photo')" />
-        </div>
-
-        <!-- Persona -->
-        <div>
-            <x-input-label for="gemini_persona" :value="__('Persona da IA')" />
-            <textarea wire:model="gemini_persona" id="gemini_persona" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" rows="5" placeholder="Ex: Você é um crítico literário sarcástico. Comente o artigo com ironia e humor, mas sem ser ofensivo...">{{ $gemini_persona }}</textarea>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Descreva como a IA deve se comportar ao comentar seus posts.</p>
-            <x-input-error class="mt-2" :messages="$errors->get('gemini_persona')" />
+            <a href="{{ route('settings.ai') }}"
+               class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 rounded-lg">
+                Gerenciar →
+            </a>
         </div>
 
         <div class="flex items-center gap-4">

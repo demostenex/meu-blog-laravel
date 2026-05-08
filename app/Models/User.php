@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'profile_photo_path', 'about_me', 'blog_description', 'gemini_api_key', 'gemini_model', 'gemini_ai_name', 'gemini_ai_photo', 'gemini_persona', 'gemini_accent_color', 'social_x', 'social_instagram', 'social_facebook', 'social_linkedin'])]
+#[Fillable(['name', 'email', 'password', 'profile_photo_path', 'about_me', 'blog_description', 'social_x', 'social_instagram', 'social_facebook', 'social_linkedin'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -26,14 +26,33 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'gemini_api_key' => 'encrypted',
+            'password'          => 'hashed',
         ];
     }
 
     public function posts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function aiProviders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserAiProvider::class);
+    }
+
+    public function defaultAiProvider(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserAiProvider::class)->where('is_default', true);
+    }
+
+    public function aiPersonas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserAiPersona::class);
+    }
+
+    public function defaultAiPersona(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserAiPersona::class)->where('is_default', true);
     }
 
     public function getRouteKey(): string

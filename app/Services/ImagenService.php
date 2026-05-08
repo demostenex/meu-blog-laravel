@@ -9,16 +9,25 @@ use Illuminate\Support\Str;
 
 class ImagenService
 {
-    private const MODEL = 'gemini-3.1-flash-image-preview';
+    public function __construct(private readonly AiServiceFactory $factory) {}
 
     public function generateCoverImage(Post $post, User $user): string
     {
-        $apiKey = $user->gemini_api_key;
+        $provider = $user->aiProviders()
+            ->with('models')
+            ->where('provider', 'gemini')
+            ->first();
+
+        if (! $provider?->api_key) {
+            throw new \RuntimeException('Nenhum provider Gemini configurado para este usuário.');
+        }
+
+        $model  = $this->factory->imageModelFor($provider);
         $prompt = $this->buildPrompt($post, $user);
 
         $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
             ->timeout(120)
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/" . self::MODEL . ":generateContent?key={$apiKey}", [
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$provider->api_key}", [
                 'contents'         => [['parts' => [['text' => $prompt]]]],
                 'generationConfig' => ['responseModalities' => ['TEXT', 'IMAGE']],
             ]);

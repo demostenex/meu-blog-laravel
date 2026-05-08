@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 use App\Models\Post;
 use App\Models\Category;
 use App\Models\Tag;
-use App\Services\GeminiService;
+use App\Services\AiServiceFactory;
 use App\Services\ImagenService;
 use App\Services\ImageService;
 use App\Jobs\GenerateEnglishVersionJob;
@@ -36,6 +36,8 @@ new class extends Component {
 
     public bool $generatingEnglish = false;
     public ?string $englishStatus = null;
+    public string $titleEnEdit = '';
+    public string $contentEnEdit = '';
 
     public ?int $category_id = null;
     public array $selectedTagIds = [];
@@ -54,6 +56,8 @@ new class extends Component {
         $this->cover_image_use_bio = (bool) $post->cover_image_use_bio;
         $this->category_id = $post->category_id;
         $this->selectedTagIds = $post->tags->pluck('id')->toArray();
+        $this->titleEnEdit   = $post->title_en ?? '';
+        $this->contentEnEdit = $post->content_en ?? '';
     }
 
     public function with(): array
@@ -180,8 +184,8 @@ new class extends Component {
 
         $user = auth()->user();
 
-        if (! $user->gemini_api_key) {
-            $this->coverStatus = 'error:Configure a chave de API do Gemini no seu perfil primeiro.';
+        if ($user->aiProviders()->doesntExist()) {
+            $this->coverStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
             return;
         }
 
@@ -218,8 +222,8 @@ new class extends Component {
     {
         $user = auth()->user();
 
-        if (! $user->gemini_api_key) {
-            $this->englishStatus = 'error:Configure a chave de API do Gemini no seu perfil primeiro.';
+        if ($user->aiProviders()->doesntExist()) {
+            $this->englishStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
             return;
         }
 
@@ -227,6 +231,32 @@ new class extends Component {
         $this->post->refresh();
 
         GenerateEnglishVersionJob::dispatch($this->post->id);
+    }
+
+    public function toggleEnglishLock(): void
+    {
+        $this->post->update(['content_en_locked' => ! $this->post->content_en_locked]);
+        $this->post->refresh();
+    }
+
+    public function saveEnglishReview(): void
+    {
+        $this->validate([
+            'titleEnEdit'   => 'required|string|max:500',
+            'contentEnEdit' => 'required|string',
+        ]);
+
+        $this->post->update([
+            'title_en'          => $this->titleEnEdit,
+            'content_en'        => $this->contentEnEdit,
+            'content_en_locked' => true,
+            'content_en_status' => 'done',
+            'content_en_error'  => null,
+        ]);
+
+        $this->post->refresh();
+        $this->englishStatus = 'success';
+        $this->dispatch('english-saved');
     }
 
     #[Poll(750, 'isEnglishPending')]
@@ -237,7 +267,7 @@ new class extends Component {
         if ($this->post->content_en_status !== 'pending') {
             $this->englishStatus = match ($this->post->content_en_status) {
                 'done'  => 'success',
-                'error' => 'error:Falha ao gerar a versão em inglês. Tente novamente.',
+                'error' => 'error:' . ($this->post->content_en_error ?? 'Falha ao gerar a versão em inglês. Tente novamente.'),
                 default => null,
             };
         }
@@ -252,8 +282,8 @@ new class extends Component {
     {
         $user = auth()->user();
 
-        if (! $user->gemini_api_key) {
-            $this->commentStatus = 'error:Configure a chave de API do Gemini no seu perfil primeiro.';
+        if ($user->aiProviders()->doesntExist()) {
+            $this->commentStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
             return;
         }
 
@@ -261,8 +291,8 @@ new class extends Component {
         $this->commentStatus = null;
 
         try {
-            $service = app(GeminiService::class);
-            $service->generateComment($this->post, $user);
+            $service = app(AiServiceFactory::class)->for($user);
+            $service->generateComment($this->post);
             $this->post->refresh();
             $this->commentStatus = 'success';
         } catch (\Throwable $e) {
@@ -302,15 +332,52 @@ new class extends Component {
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6"
+                x-data="{
+                    lang: 'pt',
+                    ptContent: @js($content),
+                    enContent: @js($post->content_en ?? ''),
+                    trix() { return document.querySelector('trix-editor'); },
+                    switchLang(newLang) {
+                        if (this.lang === newLang) return;
+                        const html = this.trix().value;
+                        if (this.lang === 'pt') { this.ptContent = html; $wire.set('content', html); }
+                        else { this.enContent = html; $wire.set('contentEnEdit', html); }
+                        this.lang = newLang;
+                        const next = newLang === 'pt' ? this.ptContent : this.enContent;
+                        this.$nextTick(() => { this.trix().editor.loadHTML(next); });
+                    }
+                }"
+                @english-saved.window="switchLang('pt')"
+            >
+
                 <form wire:submit="save" class="space-y-6">
-                    
-                    <div>
+
+                    @if ($post->content_en)
+                        <div class="flex items-center gap-3">
+                            <button type="button" @click="switchLang('pt')"
+                                :class="lang === 'pt' ? 'opacity-100 ring-2 ring-indigo-500' : 'opacity-40 hover:opacity-70'"
+                                class="text-2xl rounded-full p-0.5 transition-all" title="Editar em Português">🇧🇷</button>
+                            <button type="button" @click="switchLang('en')"
+                                :class="lang === 'en' ? 'opacity-100 ring-2 ring-indigo-500' : 'opacity-40 hover:opacity-70'"
+                                class="text-2xl rounded-full p-0.5 transition-all" title="Edit in English">🇺🇸</button>
+                            <span x-show="lang === 'en'" class="text-xs text-amber-600 dark:text-amber-400">Editando versão em inglês</span>
+                        </div>
+                    @endif
+
+                    <div x-show="lang === 'pt'">
                         <x-input-label for="title" :value="__('Título do Artigo')" />
                         <x-text-input wire:model="title" id="title" name="title" type="text" class="mt-1 block w-full text-lg" required autofocus />
                         <x-input-error class="mt-2" :messages="$errors->get('title')" />
                     </div>
+                    @if ($post->content_en)
+                        <div x-show="lang === 'en'">
+                            <x-input-label for="title_en" value="Title (English)" />
+                            <x-text-input wire:model="titleEnEdit" id="title_en" type="text" class="mt-1 block w-full text-lg" />
+                            <x-input-error class="mt-2" :messages="$errors->get('titleEnEdit')" />
+                        </div>
+                    @endif
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -427,17 +494,20 @@ new class extends Component {
 
                     <!-- Editor de Texto -->
                     <div wire:ignore>
-                        <x-input-label for="content" :value="__('Conteúdo')" class="mb-1" />
+                        <div class="flex items-center gap-2 mb-1">
+                            <x-input-label for="content" :value="__('Conteúdo')" class="mb-0" />
+                            <span x-show="lang === 'en'" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">(EN)</span>
+                        </div>
                         <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
                             Arraste/cole imagens ou vídeos no editor. Vídeos serão convertidos automaticamente para player no artigo.
                         </p>
-                        
+
                         <input id="trix_content" type="hidden" name="content" wire:model="content" value="{{ $content }}">
-                        <trix-editor input="trix_content" class="trix-content bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 rounded-md shadow-sm min-h-[400px]" x-on:trix-change="$wire.content = $event.target.value"></trix-editor>
+                        <trix-editor input="trix_content" class="trix-content bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 rounded-md shadow-sm min-h-[400px]" x-on:trix-change="lang === 'pt' ? ($wire.content = $event.target.value) : ($wire.contentEnEdit = $event.target.value)"></trix-editor>
                     </div>
                     <x-input-error class="mt-2" :messages="$errors->get('content')" />
 
-                    <div class="flex items-center flex-wrap gap-3 mt-6">
+                    <div x-show="lang === 'pt'" class="flex items-center flex-wrap gap-3 mt-6">
                         @if($post->isPublished())
                             <x-primary-button wire:click="save" wire:loading.attr="disabled" type="button">
                                 <span wire:loading.remove wire:target="save">{{ __('Salvar Alterações') }}</span>
@@ -457,11 +527,21 @@ new class extends Component {
                                 <span wire:loading wire:target="save">Salvando...</span>
                             </x-secondary-button>
                         @endif
-                        
+
                         <a href="{{ route('posts.index') }}" wire:navigate class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm">
                             Cancelar
                         </a>
                     </div>
+
+                    @if ($post->content_en)
+                        <div x-show="lang === 'en'" class="flex items-center flex-wrap gap-3 mt-6">
+                            <x-primary-button type="button" wire:click="saveEnglishReview" wire:loading.attr="disabled">
+                                <span wire:loading.remove wire:target="saveEnglishReview">💾 Salvar tradução EN</span>
+                                <span wire:loading wire:target="saveEnglishReview">Salvando...</span>
+                            </x-primary-button>
+                            <p class="text-xs text-amber-600 dark:text-amber-400">A tradução será bloqueada automaticamente contra sobrescrita da IA.</p>
+                        </div>
+                    @endif
                 </form>
 
             </div>
@@ -561,8 +641,24 @@ new class extends Component {
 
                 @if ($post->content_en)
                     <div class="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4">
-                        <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">{{ $post->title_en }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 whitespace-pre-wrap">{{ \Str::limit($post->content_en, 300) }}</p>
+                        <div class="flex items-start justify-between gap-2 mb-1">
+                            <p class="text-xs font-semibold text-blue-600 dark:text-blue-400">{{ $post->title_en }}</p>
+                            <button
+                                wire:click="toggleEnglishLock"
+                                title="{{ $post->content_en_locked ? 'Desbloquear: permitir que a IA sobrescreva esta tradução' : 'Bloquear: proteger esta tradução contra sobrescrita pela IA' }}"
+                                class="flex-shrink-0 text-xs px-2 py-1 rounded-md font-medium transition-colors
+                                    {{ $post->content_en_locked
+                                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700' }}"
+                            >
+                                {{ $post->content_en_locked ? '🔒 Bloqueada' : '🔓 Desbloqueada' }}
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{{ \Str::limit(strip_tags($post->content_en), 300) }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Use 🇺🇸 acima para editar o conteúdo em inglês diretamente no editor.</p>
+                        @if ($post->content_en_locked)
+                            <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">A IA não irá sobrescrever esta tradução.</p>
+                        @endif
                     </div>
                 @else
                     <p class="text-sm text-gray-400 italic">Nenhuma versão em inglês gerada ainda.</p>

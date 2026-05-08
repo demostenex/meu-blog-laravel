@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Services;
 
-use App\Models\User;
 use App\Services\GeminiService;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -10,13 +9,9 @@ use Tests\TestCase;
 
 class GeminiServiceTranslateTest extends TestCase
 {
-    private function makeUser(): User
+    private function makeService(string $model = 'gemini-2.0-flash'): GeminiService
     {
-        $user = new User();
-        $user->gemini_api_key = encrypt('fake-api-key');
-        $user->gemini_model   = 'gemini-2.0-flash';
-
-        return $user;
+        return new GeminiService(apiKey: 'fake-api-key', model: $model);
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
@@ -30,8 +25,7 @@ class GeminiServiceTranslateTest extends TestCase
             ], 200),
         ]);
 
-        $service    = new GeminiService();
-        $translated = $service->translateText('Olá, mundo!', $this->makeUser());
+        $translated = $this->makeService()->translateText('Olá, mundo!');
 
         $this->assertSame('Hello, world!', $translated);
     }
@@ -47,11 +41,10 @@ class GeminiServiceTranslateTest extends TestCase
             ], 200),
         ]);
 
-        $service = new GeminiService();
-        $service->translateText('Texto de teste', $this->makeUser());
+        $this->makeService()->translateText('Texto de teste');
 
         Http::assertSent(function (Request $request) {
-            $body = $request->data();
+            $body       = $request->data();
             $promptText = $body['contents'][0]['parts'][0]['text'] ?? '';
 
             return str_contains($promptText, 'English')
@@ -60,7 +53,7 @@ class GeminiServiceTranslateTest extends TestCase
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
-    public function translate_text_uses_user_model(): void
+    public function translate_text_uses_configured_model(): void
     {
         Http::fake([
             'generativelanguage.googleapis.com/*' => Http::response([
@@ -70,11 +63,7 @@ class GeminiServiceTranslateTest extends TestCase
             ], 200),
         ]);
 
-        $user              = $this->makeUser();
-        $user->gemini_model = 'gemini-1.5-pro';
-
-        $service = new GeminiService();
-        $service->translateText('texto', $user);
+        $this->makeService('gemini-1.5-pro')->translateText('texto');
 
         Http::assertSent(fn (Request $r) => str_contains($r->url(), 'gemini-1.5-pro'));
     }
@@ -91,7 +80,7 @@ class GeminiServiceTranslateTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Unexpected response from Gemini API.');
 
-        (new GeminiService())->translateText('texto', $this->makeUser());
+        $this->makeService()->translateText('texto');
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
@@ -103,6 +92,22 @@ class GeminiServiceTranslateTest extends TestCase
 
         $this->expectException(\Illuminate\Http\Client\RequestException::class);
 
-        (new GeminiService())->translateText('texto', $this->makeUser());
+        $this->makeService()->translateText('texto');
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function generate_text_returns_raw_prompt_response(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    ['content' => ['parts' => [['text' => 'Resposta gerada']]]],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->makeService()->generateText('Prompt qualquer');
+
+        $this->assertSame('Resposta gerada', $result);
     }
 }

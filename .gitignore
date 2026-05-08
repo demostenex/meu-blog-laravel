@@ -24,5 +24,12 @@ Homestead.yaml
 Thumbs.db
 Dockerfile.prod
 
-# Diário de desenvolvimento (notas pessoais)
+# Notas pessoais, rascunhos e planejamento (nunca commitar)
 DIARIO_DE_BORDO.md
+ARTIGO_*.md
+SESSAO_*.md
+PROXIMOS_PASSOS*.md
+PLANEJAMENTO*.md
+
+# Linux core dumps
+core

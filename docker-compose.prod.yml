@@ -25,6 +25,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-password}
     depends_on:
       - db
+      - redis
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -52,6 +53,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-password}
     depends_on:
       - db
+      - redis
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -69,6 +71,13 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
+    networks:
+      - meublog-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: meublog_redis
+    restart: unless-stopped
     networks:
       - meublog-network
 

@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Services;
 
-use App\Models\User;
 use App\Services\GeminiService;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -10,13 +9,9 @@ use Tests\TestCase;
 
 class GeminiServiceTranslateHtmlTest extends TestCase
 {
-    private function makeUser(): User
+    private function makeService(): GeminiService
     {
-        $user = new User();
-        $user->gemini_api_key = encrypt('fake-api-key');
-        $user->gemini_model   = 'gemini-2.0-flash';
-
-        return $user;
+        return new GeminiService(apiKey: 'fake-api-key', model: 'gemini-2.0-flash');
     }
 
     private function fakeGeminiResponse(string $text): void
@@ -39,8 +34,7 @@ class GeminiServiceTranslateHtmlTest extends TestCase
             ], 200),
         ]);
 
-        $service = new GeminiService();
-        $service->translateHtml('<p>Olá <a href="https://example.com">link</a></p>', $this->makeUser());
+        $this->makeService()->translateHtml('<p>Olá <a href="https://example.com">link</a></p>');
 
         Http::assertSent(function (Request $r) {
             $promptText = $r->data()['contents'][0]['parts'][0]['text'] ?? '';
@@ -54,10 +48,8 @@ class GeminiServiceTranslateHtmlTest extends TestCase
     {
         $this->fakeGeminiResponse('<p>Hello <a href="TRANSURL1">link</a></p>');
 
-        $service = new GeminiService();
-        $result  = $service->translateHtml(
-            '<p>Olá <a href="https://example.com/page">link</a></p>',
-            $this->makeUser()
+        $result = $this->makeService()->translateHtml(
+            '<p>Olá <a href="https://example.com/page">link</a></p>'
         );
 
         $this->assertStringContainsString('https://example.com/page', $result);
@@ -69,10 +61,8 @@ class GeminiServiceTranslateHtmlTest extends TestCase
     {
         $this->fakeGeminiResponse('<img src="TRANSURL1" alt="imagem">');
 
-        $service = new GeminiService();
-        $result  = $service->translateHtml(
-            '<img src="https://cdn.example.com/photo.jpg" alt="foto">',
-            $this->makeUser()
+        $result = $this->makeService()->translateHtml(
+            '<img src="https://cdn.example.com/photo.jpg" alt="foto">'
         );
 
         $this->assertStringContainsString('https://cdn.example.com/photo.jpg', $result);
@@ -86,10 +76,8 @@ class GeminiServiceTranslateHtmlTest extends TestCase
             '<p><a href="TRANSURL1">first</a> and <a href="TRANSURL2">second</a></p>'
         );
 
-        $service = new GeminiService();
-        $result  = $service->translateHtml(
-            '<p><a href="https://first.com">primeiro</a> e <a href="https://second.com">segundo</a></p>',
-            $this->makeUser()
+        $result = $this->makeService()->translateHtml(
+            '<p><a href="https://first.com">primeiro</a> e <a href="https://second.com">segundo</a></p>'
         );
 
         $this->assertStringContainsString('https://first.com', $result);
@@ -103,9 +91,81 @@ class GeminiServiceTranslateHtmlTest extends TestCase
     {
         $this->fakeGeminiResponse('<p>Hello world</p>');
 
-        $service = new GeminiService();
-        $result  = $service->translateHtml('<p>Olá mundo</p>', $this->makeUser());
+        $result = $this->makeService()->translateHtml('<p>Olá mundo</p>');
 
         $this->assertSame('<p>Hello world</p>', $result);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function translate_html_handles_single_quoted_src(): void
+    {
+        $this->fakeGeminiResponse('<img src="TRANSURL1" alt="photo">');
+
+        $result = $this->makeService()->translateHtml(
+            "<img src='https://cdn.example.com/photo.jpg' alt='foto'>"
+        );
+
+        $this->assertStringContainsString('https://cdn.example.com/photo.jpg', $result);
+        $this->assertStringNotContainsString('TRANSURL1', $result);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function translate_html_handles_video_element(): void
+    {
+        $this->fakeGeminiResponse('<video src="TRANSURL1" controls></video>');
+
+        $result = $this->makeService()->translateHtml(
+            '<video src="https://cdn.example.com/video.mp4" controls></video>'
+        );
+
+        $this->assertStringContainsString('https://cdn.example.com/video.mp4', $result);
+        $this->assertStringNotContainsString('TRANSURL1', $result);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function translate_html_handles_data_src(): void
+    {
+        $this->fakeGeminiResponse('<img data-src="TRANSURL1" alt="lazy">');
+
+        $result = $this->makeService()->translateHtml(
+            '<img data-src="https://cdn.example.com/lazy.jpg" alt="preguiçosa">'
+        );
+
+        $this->assertStringContainsString('https://cdn.example.com/lazy.jpg', $result);
+        $this->assertStringNotContainsString('TRANSURL1', $result);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function translate_html_handles_iframe_embed(): void
+    {
+        $this->fakeGeminiResponse('<iframe src="TRANSURL1"></iframe>');
+
+        $result = $this->makeService()->translateHtml(
+            '<iframe src="https://www.youtube.com/embed/abc123"></iframe>'
+        );
+
+        $this->assertStringContainsString('https://www.youtube.com/embed/abc123', $result);
+        $this->assertStringNotContainsString('TRANSURL1', $result);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function translate_html_does_not_send_real_urls_to_gemini(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [['content' => ['parts' => [['text' => 'video TRANSURL1 e imagem TRANSURL2']]]]],
+            ], 200),
+        ]);
+
+        $this->makeService()->translateHtml(
+            '<video src="https://cdn.example.com/video.mp4"></video><img src=\'https://cdn.example.com/img.jpg\'>'
+        );
+
+        Http::assertSent(function (Request $r) {
+            $prompt = $r->data()['contents'][0]['parts'][0]['text'] ?? '';
+            return str_contains($prompt, 'TRANSURL1')
+                && str_contains($prompt, 'TRANSURL2')
+                && ! str_contains($prompt, 'https://cdn.example.com');
+        });
     }
 }

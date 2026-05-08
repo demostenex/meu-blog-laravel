@@ -53,9 +53,9 @@ class PostCategoryTagTest extends TestCase
     public function creating_post_with_tags_creates_and_associates_them(): void
     {
         $user = User::factory()->create();
-        $tag1 = Tag::factory()->create(['name' => 'Laravel', 'slug' => 'laravel']);
-        $tag2 = Tag::factory()->create(['name' => 'Docker', 'slug' => 'docker']);
-        $tag3 = Tag::factory()->create(['name' => 'PHP', 'slug' => 'php']);
+        $tag1 = Tag::factory()->create(['name' => 'Laravel']);
+        $tag2 = Tag::factory()->create(['name' => 'Docker']);
+        $tag3 = Tag::factory()->create(['name' => 'PHP']);
 
         Volt::actingAs($user)
             ->test('posts.create')

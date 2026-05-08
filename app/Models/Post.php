@@ -7,16 +7,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Redis;
 
-#[Fillable(['user_id', 'category_id', 'title', 'title_en', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'content_en', 'content_en_status', 'published_at', 'views_count'])]
+#[Fillable(['user_id', 'category_id', 'title', 'title_en', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'content_en', 'content_en_status', 'content_en_locked', 'content_en_error', 'published_at', 'views_count'])]
 class Post extends Model
 {
     use HasFactory;
 
     protected $casts = [
-        'published_at'           => 'datetime',
+        'published_at'            => 'datetime',
         'cover_image_use_content' => 'boolean',
         'cover_image_use_bio'     => 'boolean',
+        'content_en_locked'       => 'boolean',
     ];
 
     public function isPublished(): bool
@@ -55,7 +57,7 @@ class Post extends Model
 
     public function incrementViews(): void
     {
-        static::withoutTimestamps(fn() => $this->increment('views_count'));
+        Redis::incr("post:views:{$this->id}");
     }
 
     public function getReadingTimeAttribute(): int
