@@ -584,16 +584,20 @@ new class extends Component {
                 @endif
 
                 @if ($post->latestAiComment)
-                    @php $aiComment = $post->latestAiComment; $aiUser = $post->user; @endphp
+                    @php
+                        $aiComment = $post->latestAiComment;
+                        $aiUser    = $post->user;
+                        $persona   = $aiUser->defaultAiPersona;
+                    @endphp
                     <div class="border border-purple-200 dark:border-purple-800 rounded-xl p-4 bg-purple-50 dark:bg-purple-950/30">
                         <div class="flex items-center gap-3 mb-3">
-                            @if($aiUser->gemini_ai_photo)
-                                <img src="{{ image_url($aiUser->gemini_ai_photo) }}" class="w-9 h-9 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
+                            @if($persona?->ai_photo)
+                                <img src="{{ image_url($persona->ai_photo) }}" class="w-9 h-9 rounded-full object-cover" alt="{{ $persona->ai_name }}">
                             @else
                                 <div class="w-9 h-9 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-lg">🤖</div>
                             @endif
                             <div>
-                                <p class="font-semibold text-sm text-gray-900 dark:text-gray-100">{{ $aiUser->gemini_ai_name ?: 'BOT Sarcástico' }}</p>
+                                <p class="font-semibold text-sm text-gray-900 dark:text-gray-100">{{ $persona?->ai_name ?: 'BOT Sarcástico' }}</p>
                                 <p class="text-xs text-gray-400">{{ $aiComment->model }} &bull; {{ $aiComment->created_at->diffForHumans() }}</p>
                             </div>
                         </div>

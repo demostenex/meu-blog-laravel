@@ -216,14 +216,15 @@ new #[Layout('layouts.blog')] class extends Component {
             @if($post->latestAiComment)
                 @php
                     $aiComment = $post->latestAiComment;
-                    $aiUser = $post->user;
-                    $hex = ltrim($aiUser->gemini_accent_color ?? '#7c3aed', '#');
+                    $aiUser    = $post->user;
+                    $persona   = $aiUser->defaultAiPersona;
+                    $hex = ltrim($persona?->accent_color ?? '#7c3aed', '#');
                     [$r, $g, $b] = array_map('hexdec', str_split($hex, 2));
                     $bgStyle     = "rgba($r,$g,$b,0.07)";
                     $borderStyle = "rgba($r,$g,$b,0.35)";
                     $accentColor = '#' . $hex;
-                    $aiName      = $aiUser->gemini_ai_name ?: 'BOT Sarcástico';
-                    $aiPhoto     = $aiUser->gemini_ai_photo ? image_url($aiUser->gemini_ai_photo) : '';
+                    $aiName      = $persona?->ai_name ?: 'BOT Sarcástico';
+                    $aiPhoto     = $persona?->ai_photo ? image_url($persona->ai_photo) : '';
                 @endphp
                 <div id="ai-comment-section"
                      data-ai-name="{{ $aiName }}"
@@ -232,13 +233,13 @@ new #[Layout('layouts.blog')] class extends Component {
                      style="background-color:{{ $bgStyle }};border-color:{{ $borderStyle }};scroll-margin-top:6rem"
                      class="mb-12 rounded-2xl border p-6">
                     <div class="flex items-center gap-3 mb-4">
-                        @if($aiUser->gemini_ai_photo)
-                            <img src="{{ image_url($aiUser->gemini_ai_photo) }}" class="w-10 h-10 rounded-full object-cover" alt="{{ $aiUser->gemini_ai_name }}">
+                        @if($aiPhoto)
+                            <img src="{{ $aiPhoto }}" class="w-10 h-10 rounded-full object-cover" alt="{{ $aiName }}">
                         @else
                             <div class="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-xl">🤖</div>
                         @endif
                         <div>
-                            <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $aiUser->gemini_ai_name ?: 'BOT Sarcástico' }}</p>
+                            <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $aiName }}</p>
                             <p class="text-xs text-gray-400">Opinião não solicitada &bull; <span class="italic">powered by {{ $aiComment->model }}</span></p>
                         </div>
                     </div>
