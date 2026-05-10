@@ -420,6 +420,60 @@ new #[Layout('layouts.blog')] class extends Component {
         window.addEventListener('language-changed', () => requestAnimationFrame(buildToc));
     </script>
 
+    <script>
+    (function () {
+        var sent = false;
+        var startTime = Date.now();
+        var timeAccum = 0;
+        var maxScroll = 0;
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                timeAccum += (Date.now() - startTime) / 1000;
+            } else {
+                startTime = Date.now();
+            }
+        });
+
+        window.addEventListener('scroll', function () {
+            var docScrollable = document.documentElement.scrollHeight - window.innerHeight;
+            if (docScrollable <= 0) return;
+            var pct = Math.round((window.scrollY / docScrollable) * 100);
+            if (pct > maxScroll) maxScroll = Math.min(pct, 100);
+        }, { passive: true });
+
+        function send() {
+            if (sent) return;
+            var elapsed = timeAccum + (document.hidden ? 0 : (Date.now() - startTime) / 1000);
+            var timeOnPage = Math.round(elapsed);
+
+            if (timeOnPage < 3) return;
+            sent = true;
+
+            if (!navigator.sendBeacon) return;
+
+            var tz = '';
+            try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+
+            navigator.sendBeacon(
+                '/analytics/engage',
+                new Blob([JSON.stringify({
+                    path:         '{{ request()->path() }}',
+                    scroll_depth: maxScroll,
+                    time_on_page: timeOnPage,
+                    language:     (navigator.language || '').slice(0, 10),
+                    timezone:     tz.slice(0, 50),
+                    screen_width: screen.width || 0,
+                })], { type: 'application/json' })
+            );
+        }
+
+        document.addEventListener('visibilitychange', function () { if (document.hidden) send(); });
+        window.addEventListener('pagehide', send);
+        window.addEventListener('beforeunload', send);
+    })();
+    </script>
+
     <style>
         /* Estilos Semânticos para o Conteúdo do Artigo (Trix) */
         .trix-content h1 { font-size: 2.5rem; font-weight: 800; margin: 2rem 0 1rem; color: var(--tw-prose-headings); scroll-margin-top: 6rem; }

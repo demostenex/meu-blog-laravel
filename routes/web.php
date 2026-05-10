@@ -15,6 +15,11 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
 Route::get('/sitemap-posts.xml', [SitemapController::class, 'posts'])->name('sitemap.posts');
 
+// Engajamento JS (scroll, tempo na página) — sem CSRF, rate-limited
+Route::post('/analytics/engage', \App\Http\Controllers\AnalyticsEngageController::class)
+    ->middleware(['throttle:30,1', 'doNotCacheResponse'])
+    ->name('analytics.engage');
+
 // Post individual: conta view antes do cache via middleware
 Volt::route('blog/{post:slug}', 'posts.show')->name('posts.show');
 
