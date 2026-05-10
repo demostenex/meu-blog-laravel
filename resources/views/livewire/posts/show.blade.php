@@ -497,6 +497,7 @@ new #[Layout('layouts.blog')] class extends Component {
         }
 
         document.addEventListener('DOMContentLoaded', buildToc);
+        document.addEventListener('livewire:navigated', buildToc);
         window.addEventListener('language-changed', () => requestAnimationFrame(buildToc));
     </script>
 
