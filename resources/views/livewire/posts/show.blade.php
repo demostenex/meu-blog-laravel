@@ -7,16 +7,43 @@ use App\Models\Post;
 new #[Layout('layouts.blog')] class extends Component {
     public Post $post;
     public string $lang = 'pt';
+    public ?Post $prevPost   = null;
+    public ?Post $nextPost   = null;
+    public $relatedPosts;
 
     public function mount(Post $post): void
     {
-        $this->post = $post->load('category', 'tags');
+        $this->post = $post->load('category', 'tags', 'latestAiComment', 'user.defaultAiPersona');
 
-        // Rascunho só pode ser visto pelo dono
         if (! $post->isPublished()) {
             abort_if(auth()->id() !== $post->user_id, 404);
         }
 
+        $this->prevPost = Post::published()
+            ->where('published_at', '<', $post->published_at)
+            ->orderByDesc('published_at')
+            ->first(['id', 'title', 'slug']);
+
+        $this->nextPost = Post::published()
+            ->where('published_at', '>', $post->published_at)
+            ->orderBy('published_at')
+            ->first(['id', 'title', 'slug']);
+
+        $tagIds = $post->tags->pluck('id');
+
+        $this->relatedPosts = Post::published()
+            ->where('id', '!=', $post->id)
+            ->where(function ($q) use ($post, $tagIds) {
+                if ($post->category_id) {
+                    $q->where('category_id', $post->category_id);
+                }
+                if ($tagIds->isNotEmpty()) {
+                    $q->orWhereHas('tags', fn ($t) => $t->whereIn('tags.id', $tagIds));
+                }
+            })
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get(['id', 'title', 'slug', 'cover_image', 'published_at']);
     }
 
     public function switchLang(string $lang): void
@@ -208,9 +235,62 @@ new #[Layout('layouts.blog')] class extends Component {
 
         <!-- Footer do Artigo -->
         <div class="mt-20 pt-10 border-t border-gray-100 dark:border-gray-800">
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-6 mb-12">
-                <a href="/" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">&larr; Voltar para a página inicial</a>
+
+            <!-- Navegação Anterior / Próximo -->
+            <nav class="grid grid-cols-2 gap-4 mb-12" aria-label="Navegação entre posts">
+                <div>
+                    @if($prevPost)
+                        <a href="{{ route('posts.show', $prevPost->slug) }}" wire:navigate
+                           class="flex flex-col gap-1 group p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors">
+                            <span class="text-xs text-gray-400 dark:text-gray-500 group-hover:text-blue-500 transition-colors">&larr; Anterior</span>
+                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{ $prevPost->title }}</span>
+                        </a>
+                    @else
+                        <a href="/" wire:navigate
+                           class="flex flex-col gap-1 p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors">
+                            <span class="text-xs text-gray-400">&larr; Início</span>
+                            <span class="text-sm font-semibold text-gray-500 dark:text-gray-400">Ver todos os posts</span>
+                        </a>
+                    @endif
+                </div>
+                <div class="flex justify-end">
+                    @if($nextPost)
+                        <a href="{{ route('posts.show', $nextPost->slug) }}" wire:navigate
+                           class="flex flex-col gap-1 items-end group p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors w-full text-right">
+                            <span class="text-xs text-gray-400 dark:text-gray-500 group-hover:text-blue-500 transition-colors">Próximo &rarr;</span>
+                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{ $nextPost->title }}</span>
+                        </a>
+                    @endif
+                </div>
+            </nav>
+
+            <!-- Leia Também -->
+            @if($relatedPosts && $relatedPosts->isNotEmpty())
+            <div class="mb-12">
+                <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-5 flex items-center gap-3">
+                    <span class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></span>
+                    Leia também
+                    <span class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></span>
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    @foreach($relatedPosts as $related)
+                        <a href="{{ route('posts.show', $related->slug) }}" wire:navigate
+                           class="group flex flex-col gap-2 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-800 overflow-hidden hover:shadow-sm transition-all">
+                            @if($related->cover_image)
+                                <img src="{{ image_url($related->cover_image) }}" alt="{{ $related->title }}"
+                                     class="w-full h-32 object-cover group-hover:opacity-90 transition-opacity">
+                            @else
+                                <div class="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center text-3xl">📄</div>
+                            @endif
+                            <div class="px-4 pb-4">
+                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">{{ $related->title }}</p>
+                                <p class="text-xs text-gray-400 mt-1">{{ ($related->published_at ?? $related->created_at)->format('d/m/Y') }}</p>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
             </div>
+            @endif
 
             <!-- Comentário da IA -->
             @if($post->latestAiComment)
