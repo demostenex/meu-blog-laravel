@@ -10,18 +10,28 @@ new class extends Component {
     public int $totalViews = 0;
     public $topPosts;
 
-    // Analytics
-    public int $views7d     = 0;
-    public int $unique7d    = 0;
-    public int $views30d    = 0;
-    public array $topPages      = [];
-    public array $topReferrers  = [];
-    public array $devices       = [];
+    // Totais 7d
+    public int $views7d      = 0;
+    public int $humanViews7d = 0;
+    public int $botViews7d   = 0;
+    public int $unique7d     = 0;
+    public int $views30d     = 0;
+
+    // Listas 7d
+    public array $topPages     = [];
+    public array $topReferrers = [];
+    public array $devices      = [];
+
+    // Engajamento 30d
+    public int   $avgTimeOnPage  = 0;
+    public int   $avgScrollDepth = 0;
+    public array $topByTime      = [];
+    public array $topByFullRead  = [];
 
     // R2 sync
-    public bool $syncing    = false;
-    public string $syncLog  = '';
-    public string $syncStatus = ''; // 'success' | 'error' | ''
+    public bool   $syncing    = false;
+    public string $syncLog    = '';
+    public string $syncStatus = '';
 
     public function mount(): void
     {
@@ -35,12 +45,18 @@ new class extends Component {
         $since7  = now()->subDays(7);
         $since30 = now()->subDays(30);
 
-        $this->views7d  = PageView::where('created_at', '>=', $since7)->count();
-        $this->views30d = PageView::where('created_at', '>=', $since30)->count();
+        $this->views7d      = PageView::where('created_at', '>=', $since7)->count();
+        $this->humanViews7d = PageView::where('created_at', '>=', $since7)->where('is_bot', false)->count();
+        $this->botViews7d   = $this->views7d - $this->humanViews7d;
+        $this->views30d     = PageView::where('created_at', '>=', $since30)->count();
+
         $this->unique7d = PageView::where('created_at', '>=', $since7)
-            ->distinct('ip_hash')->count('ip_hash');
+            ->where('is_bot', false)
+            ->distinct('ip_hash')
+            ->count('ip_hash');
 
         $this->topPages = PageView::where('created_at', '>=', $since7)
+            ->where('is_bot', false)
             ->selectRaw('path, count(*) as total')
             ->groupBy('path')
             ->orderByDesc('total')
@@ -49,6 +65,7 @@ new class extends Component {
             ->toArray();
 
         $this->topReferrers = PageView::where('created_at', '>=', $since7)
+            ->where('is_bot', false)
             ->whereNotNull('referrer')
             ->selectRaw('referrer, count(*) as total')
             ->groupBy('referrer')
@@ -58,10 +75,46 @@ new class extends Component {
             ->toArray();
 
         $this->devices = PageView::where('created_at', '>=', $since7)
+            ->where('is_bot', false)
             ->selectRaw('device, count(*) as total')
             ->groupBy('device')
             ->orderByDesc('total')
             ->pluck('total', 'device')
+            ->toArray();
+
+        $this->avgTimeOnPage = (int) round(
+            PageView::where('created_at', '>=', $since30)
+                ->where('is_bot', false)
+                ->whereNotNull('time_on_page')
+                ->avg('time_on_page') ?? 0
+        );
+
+        $this->avgScrollDepth = (int) round(
+            PageView::where('created_at', '>=', $since30)
+                ->where('is_bot', false)
+                ->whereNotNull('scroll_depth')
+                ->avg('scroll_depth') ?? 0
+        );
+
+        $this->topByTime = PageView::where('created_at', '>=', $since30)
+            ->where('is_bot', false)
+            ->whereNotNull('time_on_page')
+            ->selectRaw('path, round(avg(time_on_page)) as avg_time, count(*) as sessions')
+            ->groupBy('path')
+            ->havingRaw('count(*) >= 2')
+            ->orderByDesc('avg_time')
+            ->limit(5)
+            ->get(['path', 'avg_time', 'sessions'])
+            ->toArray();
+
+        $this->topByFullRead = PageView::where('created_at', '>=', $since30)
+            ->where('is_bot', false)
+            ->where('scroll_depth', '>=', 100)
+            ->selectRaw('path, count(*) as full_reads')
+            ->groupBy('path')
+            ->orderByDesc('full_reads')
+            ->limit(5)
+            ->get(['path', 'full_reads'])
             ->toArray();
     }
 
@@ -115,14 +168,25 @@ new class extends Component {
 
             <!-- Analytics Soberano -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">📊 Analytics (últimos 7 dias)</h3>
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">📊 Analytics — últimos 7 dias</h3>
+                    @if($views7d > 0)
+                    @php $botPercent = round($botViews7d / $views7d * 100); @endphp
+                    <span class="text-xs px-2.5 py-1 rounded-full font-semibold
+                        {{ $botPercent > 70
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                            : ($botPercent > 40
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300') }}">
+                        🤖 {{ $botPercent }}% bots
+                    </span>
+                    @endif
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-gray-700">
+                <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-100 dark:divide-gray-700">
                     <div class="px-6 py-5 text-center">
-                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($views7d, 0, ',', '.') }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pageviews</p>
+                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($humanViews7d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Views humanas</p>
                     </div>
                     <div class="px-6 py-5 text-center">
                         <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ number_format($unique7d, 0, ',', '.') }}</p>
@@ -130,15 +194,18 @@ new class extends Component {
                     </div>
                     <div class="px-6 py-5 text-center">
                         <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ number_format($views30d, 0, ',', '.') }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Views no mês</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Views no mês (total)</p>
+                    </div>
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-gray-400 dark:text-gray-500">{{ number_format($botViews7d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Requests de bots</p>
                     </div>
                 </div>
 
                 @if(count($topPages) > 0 || count($topReferrers) > 0)
                 <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
-                    <!-- Top Páginas -->
                     <div class="px-6 py-4">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Top Páginas</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Top Páginas (humanos)</p>
                         @forelse($topPages as $path => $count)
                             <div class="flex justify-between items-center py-1.5">
                                 <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono">/{{ $path }}</span>
@@ -149,7 +216,6 @@ new class extends Component {
                         @endforelse
                     </div>
 
-                    <!-- Top Referrers -->
                     <div class="px-6 py-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Top Referrers</p>
                         @forelse($topReferrers as $ref => $count)
@@ -163,10 +229,9 @@ new class extends Component {
                     </div>
                 </div>
 
-                <!-- Dispositivos -->
                 @if(count($devices) > 0)
-                <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex gap-6">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mr-2 self-center">Dispositivos:</p>
+                <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-6">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 self-center">Dispositivos:</p>
                     @foreach($devices as $device => $count)
                         <span class="text-sm text-gray-700 dark:text-gray-300">
                             {{ match($device) { 'desktop' => '🖥️', 'mobile' => '📱', 'tablet' => '📟', default => '❓' } }}
@@ -175,6 +240,74 @@ new class extends Component {
                     @endforeach
                 </div>
                 @endif
+                @endif
+            </div>
+
+            <!-- Engajamento (30 dias) -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">⏱️ Engajamento — últimos 30 dias</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Apenas visitantes humanos com dados de scroll e tempo.</p>
+                </div>
+
+                <div class="grid grid-cols-2 divide-x divide-gray-100 dark:divide-gray-700 border-b border-gray-100 dark:border-gray-700">
+                    <div class="px-6 py-5 text-center">
+                        @php
+                            $m = intdiv($avgTimeOnPage, 60);
+                            $s = $avgTimeOnPage % 60;
+                            $timeStr = $avgTimeOnPage > 0
+                                ? ($m > 0 ? "{$m}m " . ($s > 0 ? "{$s}s" : '') : "{$s}s")
+                                : '—';
+                        @endphp
+                        <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ trim($timeStr) }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tempo médio na página</p>
+                    </div>
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-teal-600 dark:text-teal-400">{{ $avgScrollDepth > 0 ? $avgScrollDepth . '%' : '—' }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Scroll médio</p>
+                    </div>
+                </div>
+
+                @if(count($topByTime) > 0 || count($topByFullRead) > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-gray-700">
+                    <!-- Top por tempo de leitura -->
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Mais lidos (tempo médio)</p>
+                        @forelse($topByTime as $row)
+                            @php
+                                $avgSec = (int) $row['avg_time'];
+                                $mm = intdiv($avgSec, 60);
+                                $ss = $avgSec % 60;
+                                $label = $mm > 0 ? "{$mm}m" . ($ss > 0 ? " {$ss}s" : '') : "{$ss}s";
+                                $slug = preg_replace('#^blog/#', '', $row['path']);
+                            @endphp
+                            <div class="flex justify-between items-center py-1.5 gap-2">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono">{{ $slug }}</span>
+                                <span class="shrink-0 text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ $label }}</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 italic">Dados insuficientes</p>
+                        @endforelse
+                    </div>
+
+                    <!-- Top por leitura completa (scroll 100%) -->
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Lidos até o fim (scroll 100%)</p>
+                        @forelse($topByFullRead as $row)
+                            @php $slug = preg_replace('#^blog/#', '', $row['path']); @endphp
+                            <div class="flex justify-between items-center py-1.5 gap-2">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono">{{ $slug }}</span>
+                                <span class="shrink-0 text-sm font-semibold text-teal-600 dark:text-teal-400">{{ $row['full_reads'] }}×</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 italic">Dados insuficientes</p>
+                        @endforelse
+                    </div>
+                </div>
+                @else
+                    <p class="px-6 py-5 text-sm text-gray-400 italic text-center">
+                        Dados de engajamento aparecem aqui após os primeiros acessos reais.
+                    </p>
                 @endif
             </div>
 
