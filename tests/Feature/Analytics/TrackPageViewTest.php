@@ -50,12 +50,39 @@ class TrackPageViewTest extends TestCase
     }
 
     #[Test]
-    public function bot_nao_dispara_job(): void
+    public function bot_dispara_job_marcado_como_bot(): void
     {
         Queue::fake();
 
         $this->withHeaders(['User-Agent' => 'Googlebot/2.1 (+http://www.google.com/bot.html)'])
             ->get('/');
+
+        Queue::assertPushed(RecordPageViewJob::class, function (RecordPageViewJob $job) {
+            return $job->isBot === true;
+        });
+    }
+
+    #[Test]
+    public function visita_humana_dispara_job_sem_flag_bot(): void
+    {
+        Queue::fake();
+
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'])
+            ->get('/');
+
+        Queue::assertPushed(RecordPageViewJob::class, function (RecordPageViewJob $job) {
+            return $job->isBot === false;
+        });
+    }
+
+    #[Test]
+    public function paths_ignorados_nao_disparam_job(): void
+    {
+        Queue::fake();
+
+        $this->post('/login', ['email' => 'a@a.com', 'password' => '123']);
+        $this->get('/wp-admin');
+        $this->get('/xmlrpc');
 
         Queue::assertNotPushed(RecordPageViewJob::class);
     }
@@ -66,16 +93,39 @@ class TrackPageViewTest extends TestCase
         $post = Post::factory()->published()->create();
 
         (new RecordPageViewJob(
-            path: "blog/{$post->slug}",
-            referrer: 'google.com',
-            device: 'desktop',
-            ipHash: hash('sha256', '127.0.0.1' . config('app.key')),
+            path:      "blog/{$post->slug}",
+            referrer:  'google.com',
+            device:    'desktop',
+            ipHash:    hash('sha256', '127.0.0.1' . config('app.key')),
+            userAgent: 'Mozilla/5.0',
+            viewToken: '00000000-0000-0000-0000-000000000001',
+            isBot:     false,
         ))->handle();
 
         $this->assertDatabaseHas('page_views', [
             'path'     => "blog/{$post->slug}",
             'referrer' => 'google.com',
             'device'   => 'desktop',
+            'is_bot'   => false,
+        ]);
+    }
+
+    #[Test]
+    public function job_salva_bot_com_flag_correta(): void
+    {
+        (new RecordPageViewJob(
+            path:      'blog/algum-post',
+            referrer:  null,
+            device:    'desktop',
+            ipHash:    hash('sha256', '10.0.0.1' . config('app.key')),
+            userAgent: 'Googlebot/2.1',
+            viewToken: '00000000-0000-0000-0000-000000000002',
+            isBot:     true,
+        ))->handle();
+
+        $this->assertDatabaseHas('page_views', [
+            'path'   => 'blog/algum-post',
+            'is_bot' => true,
         ]);
     }
 
