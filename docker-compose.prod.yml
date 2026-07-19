@@ -33,6 +33,9 @@ services:
       - meublog-network
 
   worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     image: meublog-app:latest
     container_name: meublog_worker
     restart: unless-stopped
