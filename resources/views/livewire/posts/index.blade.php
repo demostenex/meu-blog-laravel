@@ -1,41 +1,45 @@
 <?php
 
-use Livewire\Volt\Component;
-use App\Models\Post;
 use App\Models\Category;
+use App\Models\Post;
 use Carbon\Carbon;
+use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public string $search = '';
+
     public string $filterMonth = '';  // formato: YYYY-MM
+
     public string $filterCategory = '';
+
     public string $filterStatus = '';
 
     public function with(): array
     {
         $query = auth()->user()->posts()
             ->with('category', 'tags')
-            ->when($this->search, fn($q) => $q->where('title', 'ilike', '%' . $this->search . '%'))
+            ->when($this->search, fn ($q) => $q->where('title', 'ilike', '%'.$this->search.'%'))
             ->when($this->filterMonth, function ($q) {
                 [$year, $month] = explode('-', $this->filterMonth);
                 $q->whereYear('created_at', $year)->whereMonth('created_at', $month);
             })
-            ->when($this->filterCategory, fn($q) => $q->where('category_id', $this->filterCategory))
-            ->when($this->filterStatus === 'published', fn($q) => $q->whereNotNull('published_at'))
-            ->when($this->filterStatus === 'draft', fn($q) => $q->whereNull('published_at'))
+            ->when($this->filterCategory, fn ($q) => $q->where('category_id', $this->filterCategory))
+            ->when($this->filterStatus === 'published', fn ($q) => $q->whereNotNull('published_at'))
+            ->when($this->filterStatus === 'draft', fn ($q) => $q->whereNull('published_at'))
             ->latest();
 
         Carbon::setLocale('pt_BR');
         $months = auth()->user()->posts()
             ->selectRaw("TO_CHAR(created_at, 'YYYY-MM') as month_key, TO_CHAR(created_at, 'Mon YYYY') as label")
-            ->orderByRaw("month_key DESC")
+            ->orderByRaw('month_key DESC')
             ->distinct()
             ->pluck('label', 'month_key');
 
         return [
-            'posts'      => $query->paginate(15),
+            'posts' => $query->paginate(15),
             'categories' => Category::orderBy('name')->get(),
-            'months'     => $months,
+            'months' => $months,
         ];
     }
 
@@ -143,6 +147,9 @@ new class extends Component {
                                             <span class="line-clamp-2">{{ $post->title }}</span>
                                             @if($post->content_en_status === 'done')
                                                 <span class="ml-1" title="Tradução em inglês disponível">🇺🇸</span>
+                                            @endif
+                                            @if($post->audio_status === 'done')
+                                                <span class="ml-1" title="Áudio disponível">🔊</span>
                                             @endif
                                         </th>
                                         <td class="px-6 py-4">

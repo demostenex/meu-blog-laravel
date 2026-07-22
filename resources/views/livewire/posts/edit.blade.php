@@ -1,52 +1,71 @@
 <?php
 
-use Livewire\Volt\Component;
-use Livewire\WithFileUploads;
-use Livewire\Attributes\Poll;
-use Illuminate\Support\Str;
-use App\Models\Post;
+use App\Jobs\GenerateEnglishVersionJob;
+use App\Jobs\GeneratePostAudioJob;
 use App\Models\Category;
+use App\Models\Post;
 use App\Models\Tag;
 use App\Services\AiServiceFactory;
 use App\Services\ImagenService;
 use App\Services\ImageService;
-use App\Jobs\GenerateEnglishVersionJob;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Poll;
+use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 
-new class extends Component {
+new class extends Component
+{
     use WithFileUploads;
 
     public Post $post;
-    
+
     public $title = '';
+
     public $content = '';
+
     public $cover_image;
+
     public $existing_cover_image;
+
     public $trixImage = null;
+
     public $trixVideo = null;
 
     public string $cover_image_prompt = '';
+
     public bool $cover_image_use_content = false;
+
     public bool $cover_image_use_bio = false;
+
     public bool $generatingCover = false;
+
     public ?string $coverStatus = null;
 
     public bool $generatingComment = false;
+
     public ?string $commentStatus = null;
 
     public bool $generatingEnglish = false;
+
     public ?string $englishStatus = null;
+
     public string $titleEnEdit = '';
+
     public string $contentEnEdit = '';
 
+    public ?string $audioStatus = null;
+
     public ?int $category_id = null;
+
     public array $selectedTagIds = [];
+
     public string $newTag = '';
 
     public function mount(Post $post)
     {
         abort_if($post->user_id !== auth()->id(), 403);
-        
+
         $this->post = $post;
         $this->title = $post->title;
         $this->content = $post->content;
@@ -56,7 +75,7 @@ new class extends Component {
         $this->cover_image_use_bio = (bool) $post->cover_image_use_bio;
         $this->category_id = $post->category_id;
         $this->selectedTagIds = $post->tags->pluck('id')->toArray();
-        $this->titleEnEdit   = $post->title_en ?? '';
+        $this->titleEnEdit = $post->title_en ?? '';
         $this->contentEnEdit = $post->content_en ?? '';
     }
 
@@ -64,7 +83,7 @@ new class extends Component {
     {
         return [
             'categories' => Category::orderBy('name')->get(),
-            'allTags'    => Tag::orderBy('name')->get(),
+            'allTags' => Tag::orderBy('name')->get(),
         ];
     }
 
@@ -84,7 +103,7 @@ new class extends Component {
             ['slug' => Str::slug($this->newTag)],
             ['name' => trim($this->newTag)]
         );
-        if (!in_array($tag->id, $this->selectedTagIds)) {
+        if (! in_array($tag->id, $this->selectedTagIds)) {
             $this->selectedTagIds[] = $tag->id;
         }
         $this->newTag = '';
@@ -93,15 +112,15 @@ new class extends Component {
     public function rules()
     {
         return [
-            'title'       => 'required|string|max:255',
-            'content'     => 'required|string',
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
             'cover_image' => 'nullable|image|max:2048',
-            'trixImage'   => 'nullable|image|max:5120',
-            'trixVideo'   => 'nullable|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400',
-            'category_id'    => 'nullable|exists:categories,id',
+            'trixImage' => 'nullable|image|max:5120',
+            'trixVideo' => 'nullable|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400',
+            'category_id' => 'nullable|exists:categories,id',
             'selectedTagIds' => 'nullable|array',
             'selectedTagIds.*' => 'exists:tags,id',
-            'newTag'         => 'nullable|string|max:100',
+            'newTag' => 'nullable|string|max:100',
         ];
     }
 
@@ -142,14 +161,14 @@ new class extends Component {
         }
 
         $this->post->update([
-            'title'                   => $normalizedTitle,
-            'slug'                    => $slug,
-            'content'                 => $this->content,
-            'cover_image'             => $imagePath,
-            'cover_image_prompt'      => $this->cover_image_prompt ?: null,
+            'title' => $normalizedTitle,
+            'slug' => $slug,
+            'content' => $this->content,
+            'cover_image' => $imagePath,
+            'cover_image_prompt' => $this->cover_image_prompt ?: null,
             'cover_image_use_content' => $this->cover_image_use_content,
-            'cover_image_use_bio'     => $this->cover_image_use_bio,
-            'category_id'             => $this->category_id ?: null,
+            'cover_image_use_bio' => $this->cover_image_use_bio,
+            'category_id' => $this->category_id ?: null,
         ]);
 
         $this->post->tags()->sync($this->selectedTagIds);
@@ -186,6 +205,7 @@ new class extends Component {
 
         if ($user->aiProviders()->doesntExist()) {
             $this->coverStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
+
             return;
         }
 
@@ -194,9 +214,9 @@ new class extends Component {
 
         try {
             $this->post->update([
-                'cover_image_prompt'      => $this->cover_image_prompt,
+                'cover_image_prompt' => $this->cover_image_prompt,
                 'cover_image_use_content' => $this->cover_image_use_content,
-                'cover_image_use_bio'     => $this->cover_image_use_bio,
+                'cover_image_use_bio' => $this->cover_image_use_bio,
             ]);
             $this->post->refresh();
 
@@ -211,8 +231,8 @@ new class extends Component {
             $this->existing_cover_image = $path;
             $this->cover_image = null;
             $this->coverStatus = 'success';
-        } catch (\Throwable $e) {
-            $this->coverStatus = 'error:' . $e->getMessage();
+        } catch (Throwable $e) {
+            $this->coverStatus = 'error:'.$e->getMessage();
         } finally {
             $this->generatingCover = false;
         }
@@ -224,6 +244,7 @@ new class extends Component {
 
         if ($user->aiProviders()->doesntExist()) {
             $this->englishStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
+
             return;
         }
 
@@ -242,16 +263,16 @@ new class extends Component {
     public function saveEnglishReview(): void
     {
         $this->validate([
-            'titleEnEdit'   => 'required|string|max:500',
+            'titleEnEdit' => 'required|string|max:500',
             'contentEnEdit' => 'required|string',
         ]);
 
         $this->post->update([
-            'title_en'          => $this->titleEnEdit,
-            'content_en'        => $this->contentEnEdit,
+            'title_en' => $this->titleEnEdit,
+            'content_en' => $this->contentEnEdit,
             'content_en_locked' => true,
             'content_en_status' => 'done',
-            'content_en_error'  => null,
+            'content_en_error' => null,
         ]);
 
         $this->post->refresh();
@@ -266,8 +287,8 @@ new class extends Component {
 
         if ($this->post->content_en_status !== 'pending') {
             $this->englishStatus = match ($this->post->content_en_status) {
-                'done'  => 'success',
-                'error' => 'error:' . ($this->post->content_en_error ?? 'Falha ao gerar a versão em inglês. Tente novamente.'),
+                'done' => 'success',
+                'error' => 'error:'.($this->post->content_en_error ?? 'Falha ao gerar a versão em inglês. Tente novamente.'),
                 default => null,
             };
         }
@@ -278,12 +299,48 @@ new class extends Component {
         return $this->post->content_en_status === 'pending';
     }
 
+    public function generateAudio(): void
+    {
+        $user = auth()->user();
+
+        if ($user->aiProviders()->doesntExist()) {
+            $this->audioStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
+
+            return;
+        }
+
+        $this->post->update(['audio_status' => 'pending']);
+        $this->post->refresh();
+
+        GeneratePostAudioJob::dispatch($this->post->id);
+    }
+
+    #[Poll(750, 'isAudioPending')]
+    public function refreshAudioStatus(): void
+    {
+        $this->post->refresh();
+
+        if ($this->post->audio_status !== 'pending') {
+            $this->audioStatus = match ($this->post->audio_status) {
+                'done' => 'success',
+                'error' => 'error:'.($this->post->audio_error ?? 'Falha ao gerar o áudio. Tente novamente.'),
+                default => null,
+            };
+        }
+    }
+
+    public function isAudioPending(): bool
+    {
+        return $this->post->audio_status === 'pending';
+    }
+
     public function generateAiComment()
     {
         $user = auth()->user();
 
         if ($user->aiProviders()->doesntExist()) {
             $this->commentStatus = 'error:Configure um AI provider nas configurações de IA primeiro.';
+
             return;
         }
 
@@ -295,8 +352,8 @@ new class extends Component {
             $service->generateComment($this->post);
             $this->post->refresh();
             $this->commentStatus = 'success';
-        } catch (\Throwable $e) {
-            $this->commentStatus = 'error:' . $e->getMessage();
+        } catch (Throwable $e) {
+            $this->commentStatus = 'error:'.$e->getMessage();
         } finally {
             $this->generatingComment = false;
         }
@@ -666,6 +723,54 @@ new class extends Component {
                     </div>
                 @else
                     <p class="text-sm text-gray-400 italic">Nenhuma versão em inglês gerada ainda.</p>
+                @endif
+            </div>
+
+            <!-- Narração em Áudio -->
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">🔊 Narração em Áudio</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">A IA gera uma narração em áudio do artigo, tocada numa barra no topo da página pública.</p>
+                    </div>
+                    <button
+                        wire:click="generateAudio"
+                        wire:loading.attr="disabled"
+                        wire:target="generateAudio"
+                        @if($post->audio_status === 'pending') disabled @endif
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
+                    >
+                        @if($post->audio_status === 'pending')
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                            Gerando…
+                        @else
+                            <span wire:loading.remove wire:target="generateAudio">
+                                {{ $post->audio_path ? '🔄 Regerar narração' : '🔊 Gerar narração' }}
+                            </span>
+                            <span wire:loading wire:target="generateAudio" class="flex items-center gap-2">
+                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                                Enviando…
+                            </span>
+                        @endif
+                    </button>
+                </div>
+
+                @if ($audioStatus === 'success')
+                    <p class="text-sm text-green-600 dark:text-green-400 mb-3">✅ Áudio gerado com sucesso!</p>
+                @elseif ($audioStatus && str_starts_with($audioStatus, 'error:'))
+                    <p class="text-sm text-red-600 dark:text-red-400 mb-3">❌ {{ str_replace('error:', '', $audioStatus) }}</p>
+                @endif
+
+                @if ($post->audio_path)
+                    <audio controls class="w-full mt-2" src="{{ image_url($post->audio_path) }}"></audio>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                        Gerado em {{ $post->audio_generated_at?->format('d/m/Y H:i') }}.
+                        @if($post->audio_generated_at && $post->updated_at->gt($post->audio_generated_at))
+                            <span class="text-amber-600 dark:text-amber-400">O conteúdo foi editado depois — considere regenerar.</span>
+                        @endif
+                    </p>
+                @else
+                    <p class="text-sm text-gray-400 italic">Nenhum áudio gerado ainda.</p>
                 @endif
             </div>
         </div>
