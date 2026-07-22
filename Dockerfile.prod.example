@@ -52,6 +52,10 @@ RUN chown -R $user:www-data /var/www \
 RUN echo "upload_max_filesize=100M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size=100M" >> /usr/local/etc/php/conf.d/uploads.ini
 
+# Memória padrão (128M) estoura ao decodificar respostas grandes em base64
+# (ex: áudio de TTS embutido em JSON) — sobe pra 512M em todos os SAPIs.
+RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/memory.ini
+
 # Muda para o usuário sem privilégios
 USER $user
 
