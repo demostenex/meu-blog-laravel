@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Services\TtsService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Storage;
 
 class GeneratePostAudioJob implements ShouldQueue
@@ -17,6 +18,16 @@ class GeneratePostAudioJob implements ShouldQueue
     public int $tries = 2;
 
     public function __construct(public readonly int $postId) {}
+
+    /**
+     * Evita que dois disparos pro mesmo post rodem em paralelo — sem isso, o segundo
+     * job pode apagar do disco o áudio que o primeiro acabou de gerar com sucesso
+     * (a limpeza do "áudio antigo" enxerga o audio_path recém-salvo pelo outro job).
+     */
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping($this->postId))->releaseAfter(30)];
+    }
 
     public function handle(TtsService $ttsService): void
     {

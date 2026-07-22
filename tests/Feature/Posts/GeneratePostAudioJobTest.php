@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Services\TtsService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
@@ -101,6 +102,17 @@ class GeneratePostAudioJobTest extends TestCase
             ->call('generateAudio');
 
         $this->assertSame('Kore', $post->fresh()->audio_voice);
+    }
+
+    #[Test]
+    public function job_is_serialized_per_post_to_avoid_overlapping_runs(): void
+    {
+        $post = Post::factory()->create(['user_id' => $this->user->id]);
+
+        $middleware = (new GeneratePostAudioJob($post->id))->middleware();
+
+        $this->assertCount(1, $middleware);
+        $this->assertInstanceOf(WithoutOverlapping::class, $middleware[0]);
     }
 
     #[Test]
