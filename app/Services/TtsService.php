@@ -23,7 +23,10 @@ class TtsService
         }
 
         $model = $this->factory->audioModelFor($provider);
-        $text = Str::limit(trim($post->title."\n\n".strip_tags($post->content)), 20000, '');
+        // Cap generoso o bastante pra ler o post inteiro na maioria dos casos, mas que evita
+        // narrações de dezenas de minutos — cujo áudio bruto (PCM) estoura o memory_limit do
+        // PHP ao ser decodificado/montado em memória (ver AudioService::storePcmAsWav).
+        $text = Str::limit(trim($post->title."\n\n".strip_tags($post->content)), 8000, '');
 
         $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
             ->timeout(300)

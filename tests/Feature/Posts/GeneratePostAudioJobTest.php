@@ -177,6 +177,32 @@ class GeneratePostAudioJobTest extends TestCase
         $this->assertSame('API quota exceeded.', $post->audio_error);
     }
 
+    #[Test]
+    public function job_saves_error_messages_longer_than_255_characters(): void
+    {
+        $post = Post::factory()->create([
+            'user_id' => $this->user->id,
+            'audio_status' => 'pending',
+        ]);
+
+        $longMessage = 'cURL error 28: Operation timed out after 300001 milliseconds with 0 bytes received (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-tts:generateContent?key=fake-key-with-extra-padding-to-exceed-255-chars';
+        $this->assertGreaterThan(255, strlen($longMessage));
+
+        $this->mockTtsService()
+            ->shouldReceive('generateAudio')
+            ->once()
+            ->andThrow(new \RuntimeException($longMessage));
+
+        try {
+            (new GeneratePostAudioJob($post->id))->handle(app(TtsService::class));
+        } catch (\RuntimeException) {
+        }
+
+        $post->refresh();
+        $this->assertSame('error', $post->audio_status);
+        $this->assertSame($longMessage, $post->audio_error);
+    }
+
     // ── Polling status via edit page ──────────────────────────────────────
 
     #[Test]
