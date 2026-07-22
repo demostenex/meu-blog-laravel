@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Redis;
 
 #[Fillable(['user_id', 'category_id', 'title', 'title_en', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'content_en', 'content_en_status', 'content_en_locked', 'content_en_error', 'published_at', 'views_count'])]
@@ -15,10 +17,10 @@ class Post extends Model
     use HasFactory;
 
     protected $casts = [
-        'published_at'            => 'datetime',
+        'published_at' => 'datetime',
         'cover_image_use_content' => 'boolean',
-        'cover_image_use_bio'     => 'boolean',
-        'content_en_locked'       => 'boolean',
+        'cover_image_use_bio' => 'boolean',
+        'content_en_locked' => 'boolean',
     ];
 
     public function isPublished(): bool
@@ -30,6 +32,7 @@ class Post extends Model
     {
         return $query->whereNotNull('published_at');
     }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -45,14 +48,19 @@ class Post extends Model
         return $this->belongsToMany(Tag::class);
     }
 
-    public function aiComments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function aiComments(): HasMany
     {
         return $this->hasMany(AiComment::class);
     }
 
-    public function latestAiComment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function latestAiComment(): HasOne
     {
         return $this->hasOne(AiComment::class)->latestOfMany();
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class);
     }
 
     public function incrementViews(): void
