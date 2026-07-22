@@ -15,26 +15,36 @@ class AudioService
     public function storePcmAsWav(string $base64Pcm, string $directory): string
     {
         $pcm = base64_decode($base64Pcm);
-        $wav = $this->wrapPcmAsWav($pcm);
+        unset($base64Pcm);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'audio_');
+        $handle = fopen($tmpFile, 'wb');
+        fwrite($handle, $this->wavHeader(strlen($pcm)));
+        fwrite($handle, $pcm);
+        fclose($handle);
+        unset($pcm);
 
         $path = $directory.'/'.Str::uuid().'.wav';
 
-        Storage::disk(config('filesystems.image_disk', 'public'))->put($path, $wav);
+        try {
+            $stream = fopen($tmpFile, 'rb');
+            Storage::disk(config('filesystems.image_disk', 'public'))->put($path, $stream);
+            fclose($stream);
+        } finally {
+            @unlink($tmpFile);
+        }
 
         return $path;
     }
 
-    private function wrapPcmAsWav(string $pcm, int $sampleRate = 24000, int $channels = 1, int $bitsPerSample = 16): string
+    private function wavHeader(int $dataSize, int $sampleRate = 24000, int $channels = 1, int $bitsPerSample = 16): string
     {
         $byteRate = $sampleRate * $channels * $bitsPerSample / 8;
         $blockAlign = $channels * $bitsPerSample / 8;
-        $dataSize = strlen($pcm);
 
-        $header = 'RIFF'.pack('V', 36 + $dataSize).'WAVE'
+        return 'RIFF'.pack('V', 36 + $dataSize).'WAVE'
             .'fmt '.pack('V', 16).pack('v', 1).pack('v', $channels)
             .pack('V', $sampleRate).pack('V', $byteRate).pack('v', $blockAlign).pack('v', $bitsPerSample)
             .'data'.pack('V', $dataSize);
-
-        return $header.$pcm;
     }
 }

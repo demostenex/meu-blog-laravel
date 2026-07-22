@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Services\TtsService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
@@ -71,6 +72,47 @@ class GeneratePostAudioJobTest extends TestCase
             ->call('generateAudio');
 
         $this->assertSame('pending', $post->fresh()->audio_status);
+    }
+
+    #[Test]
+    public function edit_page_saves_selected_voice_before_dispatching(): void
+    {
+        Queue::fake();
+
+        $post = Post::factory()->create(['user_id' => $this->user->id]);
+
+        Volt::actingAs($this->user)
+            ->test('posts.edit', ['post' => $post])
+            ->set('audioVoice', 'Puck')
+            ->call('generateAudio');
+
+        $this->assertSame('Puck', $post->fresh()->audio_voice);
+    }
+
+    #[Test]
+    public function edit_page_falls_back_to_kore_for_an_unknown_voice(): void
+    {
+        Queue::fake();
+
+        $post = Post::factory()->create(['user_id' => $this->user->id]);
+
+        Volt::actingAs($this->user)
+            ->test('posts.edit', ['post' => $post])
+            ->set('audioVoice', 'NotARealVoice')
+            ->call('generateAudio');
+
+        $this->assertSame('Kore', $post->fresh()->audio_voice);
+    }
+
+    #[Test]
+    public function job_is_serialized_per_post_to_avoid_overlapping_runs(): void
+    {
+        $post = Post::factory()->create(['user_id' => $this->user->id]);
+
+        $middleware = (new GeneratePostAudioJob($post->id))->middleware();
+
+        $this->assertCount(1, $middleware);
+        $this->assertInstanceOf(WithoutOverlapping::class, $middleware[0]);
     }
 
     #[Test]
@@ -175,6 +217,32 @@ class GeneratePostAudioJobTest extends TestCase
         $post->refresh();
         $this->assertSame('error', $post->audio_status);
         $this->assertSame('API quota exceeded.', $post->audio_error);
+    }
+
+    #[Test]
+    public function job_saves_error_messages_longer_than_255_characters(): void
+    {
+        $post = Post::factory()->create([
+            'user_id' => $this->user->id,
+            'audio_status' => 'pending',
+        ]);
+
+        $longMessage = 'cURL error 28: Operation timed out after 300001 milliseconds with 0 bytes received (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-tts:generateContent?key=fake-key-with-extra-padding-to-exceed-255-chars';
+        $this->assertGreaterThan(255, strlen($longMessage));
+
+        $this->mockTtsService()
+            ->shouldReceive('generateAudio')
+            ->once()
+            ->andThrow(new \RuntimeException($longMessage));
+
+        try {
+            (new GeneratePostAudioJob($post->id))->handle(app(TtsService::class));
+        } catch (\RuntimeException) {
+        }
+
+        $post->refresh();
+        $this->assertSame('error', $post->audio_status);
+        $this->assertSame($longMessage, $post->audio_error);
     }
 
     // ── Polling status via edit page ──────────────────────────────────────

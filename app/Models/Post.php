@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Redis;
 
-#[Fillable(['user_id', 'category_id', 'title', 'title_en', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'content_en', 'content_en_status', 'content_en_locked', 'content_en_error', 'published_at', 'views_count', 'audio_path', 'audio_status', 'audio_error', 'audio_generated_at'])]
+#[Fillable(['user_id', 'category_id', 'title', 'title_en', 'slug', 'cover_image', 'cover_image_prompt', 'cover_image_use_content', 'cover_image_use_bio', 'content', 'content_en', 'content_en_status', 'content_en_locked', 'content_en_error', 'published_at', 'views_count', 'audio_path', 'audio_status', 'audio_voice', 'audio_error', 'audio_generated_at'])]
 class Post extends Model
 {
     use HasFactory;
@@ -19,9 +19,9 @@ class Post extends Model
     protected $casts = [
         'published_at' => 'datetime',
         'cover_image_use_content' => 'boolean',
-        'cover_image_use_bio'     => 'boolean',
-        'content_en_locked'       => 'boolean',
-        'audio_generated_at'      => 'datetime',
+        'cover_image_use_bio' => 'boolean',
+        'content_en_locked' => 'boolean',
+        'audio_generated_at' => 'datetime',
     ];
 
     public function isPublished(): bool
