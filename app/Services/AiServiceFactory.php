@@ -32,11 +32,11 @@ class AiServiceFactory
             ?? $provider->models()->where('capability', $capability)->value('model')
             ?? $this->defaultModelFor($provider->provider, $capability);
 
-        $persona  = $provider->persona?->content;
+        $persona = $provider->persona?->content;
 
         return match ($provider->provider) {
             'gemini' => new GeminiService($provider->api_key, $model, $persona),
-            default  => throw new \InvalidArgumentException("Provider não suportado: {$provider->provider}"),
+            default => throw new \InvalidArgumentException("Provider não suportado: {$provider->provider}"),
         };
     }
 
@@ -50,15 +50,26 @@ class AiServiceFactory
             ?? $this->defaultModelFor($provider->provider, 'image');
     }
 
+    public function audioModelFor(UserAiProvider $provider): string
+    {
+        return $provider->models()
+            ->where('capability', 'audio')
+            ->where('is_default', true)
+            ->value('model')
+            ?? $provider->models()->where('capability', 'audio')->value('model')
+            ?? $this->defaultModelFor($provider->provider, 'audio');
+    }
+
     private function defaultModelFor(string $provider, string $capability = 'text'): string
     {
         return match ([$provider, $capability]) {
-            ['gemini', 'text']    => 'gemini-2.0-flash',
-            ['gemini', 'image']   => 'gemini-3.1-flash-image-preview',
-            ['openai', 'text']    => 'gpt-4o',
-            ['openai', 'image']   => 'dall-e-3',
+            ['gemini', 'text'] => 'gemini-2.0-flash',
+            ['gemini', 'image'] => 'gemini-3.1-flash-image-preview',
+            ['gemini', 'audio'] => 'gemini-2.5-flash-preview-tts',
+            ['openai', 'text'] => 'gpt-4o',
+            ['openai', 'image'] => 'dall-e-3',
             ['anthropic', 'text'] => 'claude-sonnet-4-6',
-            default               => throw new \InvalidArgumentException("Provider/capability não suportado: {$provider}/{$capability}"),
+            default => throw new \InvalidArgumentException("Provider/capability não suportado: {$provider}/{$capability}"),
         };
     }
 }

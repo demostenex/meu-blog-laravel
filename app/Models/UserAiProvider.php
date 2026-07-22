@@ -16,7 +16,7 @@ class UserAiProvider extends Model
     protected function casts(): array
     {
         return [
-            'api_key'    => 'encrypted',
+            'api_key' => 'encrypted',
             'is_default' => 'boolean',
         ];
     }
@@ -46,8 +46,8 @@ class UserAiProvider extends Model
     public static function knownProviders(): array
     {
         return [
-            'gemini'    => 'Google Gemini',
-            'openai'    => 'OpenAI',
+            'gemini' => 'Google Gemini',
+            'openai' => 'OpenAI',
             'anthropic' => 'Anthropic Claude',
         ];
     }
@@ -56,16 +56,19 @@ class UserAiProvider extends Model
     {
         $map = [
             'gemini' => [
-                'text'  => ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro'],
+                'text' => ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro'],
                 'image' => ['gemini-3.1-flash-image-preview', 'imagen-3.0-generate-002'],
+                'audio' => ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'],
             ],
             'openai' => [
-                'text'  => ['gpt-4.1', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+                'text' => ['gpt-4.1', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
                 'image' => ['dall-e-3', 'dall-e-2'],
+                'audio' => [],
             ],
             'anthropic' => [
-                'text'  => ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+                'text' => ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
                 'image' => [],
+                'audio' => [],
             ],
         ];
 

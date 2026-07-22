@@ -187,6 +187,14 @@ new #[Layout('layouts.blog')] class extends Component {
                 @endif
             </header>
 
+            <!-- Narração em Áudio -->
+            @if($post->audio_path)
+            <div class="mb-8 flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 px-4 py-3">
+                <span class="text-lg">🔊</span>
+                <audio controls class="flex-1 h-10" src="{{ image_url($post->audio_path) }}"></audio>
+            </div>
+            @endif
+
             <!-- Imagem de Capa -->
             @if($post->cover_image)
                 <div class="mb-12">

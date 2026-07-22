@@ -1,43 +1,58 @@
 <?php
 
-use Livewire\Volt\Component;
-use Livewire\WithFileUploads;
-use App\Models\UserAiProvider;
 use App\Models\UserAiModel;
 use App\Models\UserAiPersona;
+use App\Models\UserAiProvider;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 
-new class extends Component {
+new class extends Component
+{
     use WithFileUploads;
 
     public string $tab = 'providers'; // 'providers' | 'personas'
 
     // ── Provider form ──────────────────────────────────────────────────────
-    public string $provider     = '';
-    public string $api_key      = '';
-    public ?int   $persona_id   = null;
-    public bool   $is_default   = false;
-    public ?int   $editingProviderId = null;
-    public bool   $showProviderForm  = false;
+    public string $provider = '';
+
+    public string $api_key = '';
+
+    public ?int $persona_id = null;
+
+    public bool $is_default = false;
+
+    public ?int $editingProviderId = null;
+
+    public bool $showProviderForm = false;
 
     // ── Model form ─────────────────────────────────────────────────────────
-    public string $newModel      = '';
+    public string $newModel = '';
+
     public string $newCapability = 'text';
 
     // ── Persona form ───────────────────────────────────────────────────────
-    public string $personaName    = '';
-    public string $personaAiName  = '';
+    public string $personaName = '';
+
+    public string $personaAiName = '';
+
     public string $personaContent = '';
-    public string $accentColor    = '#7c3aed';
+
+    public string $accentColor = '#7c3aed';
+
     public $personaPhoto;
-    public bool   $personaDefault = false;
-    public ?int   $editingPersonaId = null;
-    public bool   $showPersonaForm  = false;
+
+    public bool $personaDefault = false;
+
+    public ?int $editingPersonaId = null;
+
+    public bool $showPersonaForm = false;
 
     // ── Collections ────────────────────────────────────────────────────────
     public $providers;
+
     public $personas;
 
     public function mount(): void
@@ -48,7 +63,7 @@ new class extends Component {
     private function load(): void
     {
         $this->providers = Auth::user()->aiProviders()->with(['persona', 'models'])->get();
-        $this->personas  = Auth::user()->aiPersonas()->get();
+        $this->personas = Auth::user()->aiPersonas()->get();
     }
 
     // ── Providers ──────────────────────────────────────────────────────────
@@ -61,17 +76,17 @@ new class extends Component {
         if ($id) {
             $p = UserAiProvider::findOrFail($id);
             $this->editingProviderId = $id;
-            $this->provider          = $p->provider;
-            $this->persona_id        = $p->persona_id;
-            $this->is_default        = $p->is_default;
+            $this->provider = $p->provider;
+            $this->persona_id = $p->persona_id;
+            $this->is_default = $p->is_default;
         }
     }
 
     public function saveProvider(): void
     {
         $validated = $this->validate([
-            'provider'   => ['required', 'string', 'in:' . implode(',', array_keys(UserAiProvider::knownProviders()))],
-            'api_key'    => $this->editingProviderId ? ['nullable', 'string'] : ['required', 'string'],
+            'provider' => ['required', 'string', 'in:'.implode(',', array_keys(UserAiProvider::knownProviders()))],
+            'api_key' => $this->editingProviderId ? ['nullable', 'string'] : ['required', 'string'],
             'persona_id' => ['nullable', 'integer', 'exists:user_ai_personas,id'],
             'is_default' => ['boolean'],
         ]);
@@ -92,11 +107,12 @@ new class extends Component {
         } else {
             if ($user->aiProviders()->where('provider', $validated['provider'])->exists()) {
                 $this->addError('provider', 'Você já tem este provider configurado.');
+
                 return;
             }
             $providerModel = $user->aiProviders()->create([
-                'provider'   => $validated['provider'],
-                'api_key'    => $validated['api_key'],
+                'provider' => $validated['provider'],
+                'api_key' => $validated['api_key'],
                 'persona_id' => $validated['persona_id'],
                 'is_default' => $validated['is_default'],
             ]);
@@ -127,7 +143,7 @@ new class extends Component {
     public function resetProviderForm(): void
     {
         $this->editingProviderId = null;
-        $this->showProviderForm  = false;
+        $this->showProviderForm = false;
         $this->provider = $this->api_key = '';
         $this->persona_id = null;
         $this->is_default = false;
@@ -139,15 +155,15 @@ new class extends Component {
     public function addModel(int $providerId): void
     {
         $this->validate([
-            'newModel'      => ['required', 'string', 'max:100'],
-            'newCapability' => ['required', 'in:text,image'],
+            'newModel' => ['required', 'string', 'max:100'],
+            'newCapability' => ['required', 'in:text,image,audio'],
         ]);
 
         $provider = UserAiProvider::findOrFail($providerId);
-        $isFirst  = $provider->models()->where('capability', $this->newCapability)->doesntExist();
+        $isFirst = $provider->models()->where('capability', $this->newCapability)->doesntExist();
 
         $provider->models()->create([
-            'model'      => $this->newModel,
+            'model' => $this->newModel,
             'capability' => $this->newCapability,
             'is_default' => $isFirst,
         ]);
@@ -180,32 +196,32 @@ new class extends Component {
         if ($id) {
             $p = UserAiPersona::findOrFail($id);
             $this->editingPersonaId = $id;
-            $this->personaName      = $p->name;
-            $this->personaAiName    = $p->ai_name ?? '';
-            $this->personaContent   = $p->content ?? '';
-            $this->accentColor      = $p->accent_color ?? '#7c3aed';
-            $this->personaDefault   = $p->is_default;
+            $this->personaName = $p->name;
+            $this->personaAiName = $p->ai_name ?? '';
+            $this->personaContent = $p->content ?? '';
+            $this->accentColor = $p->accent_color ?? '#7c3aed';
+            $this->personaDefault = $p->is_default;
         }
     }
 
     public function savePersona(): void
     {
         $validated = $this->validate([
-            'personaName'    => ['required', 'string', 'max:100'],
-            'personaAiName'  => ['nullable', 'string', 'max:100'],
+            'personaName' => ['required', 'string', 'max:100'],
+            'personaAiName' => ['nullable', 'string', 'max:100'],
             'personaContent' => ['nullable', 'string', 'max:5000'],
-            'accentColor'    => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'personaPhoto'   => ['nullable', 'image', 'max:10240'],
+            'accentColor' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'personaPhoto' => ['nullable', 'image', 'max:10240'],
             'personaDefault' => ['boolean'],
         ]);
 
         $user = Auth::user();
         $data = [
-            'name'         => $validated['personaName'],
-            'ai_name'      => $validated['personaAiName'],
-            'content'      => $validated['personaContent'],
+            'name' => $validated['personaName'],
+            'ai_name' => $validated['personaAiName'],
+            'content' => $validated['personaContent'],
             'accent_color' => $validated['accentColor'] ?? '#7c3aed',
-            'is_default'   => $validated['personaDefault'],
+            'is_default' => $validated['personaDefault'],
         ];
 
         if ($this->editingPersonaId) {
@@ -245,10 +261,10 @@ new class extends Component {
     public function resetPersonaForm(): void
     {
         $this->editingPersonaId = null;
-        $this->showPersonaForm  = false;
+        $this->showPersonaForm = false;
         $this->personaName = $this->personaAiName = $this->personaContent = '';
-        $this->accentColor    = '#7c3aed';
-        $this->personaPhoto   = null;
+        $this->accentColor = '#7c3aed';
+        $this->personaPhoto = null;
         $this->personaDefault = false;
         $this->resetErrorBag();
     }
@@ -350,7 +366,7 @@ new class extends Component {
 
                     {{-- Modelos --}}
                     <div class="px-6 py-4">
-                        @foreach(['text' => 'Texto', 'image' => 'Imagem'] as $cap => $capLabel)
+                        @foreach(['text' => 'Texto', 'image' => 'Imagem', 'audio' => 'Áudio'] as $cap => $capLabel)
                             @php $capModels = $p->models->where('capability', $cap); @endphp
                             <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2 mt-3 first:mt-0">
                                 Modelos de {{ $capLabel }}
@@ -394,6 +410,7 @@ new class extends Component {
                                         class="block w-full text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                     <option value="text">Texto</option>
                                     <option value="image">Imagem</option>
+                                    <option value="audio">Áudio</option>
                                 </select>
                             </div>
                             <div class="flex-1">
