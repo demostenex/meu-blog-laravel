@@ -26,7 +26,7 @@ class TtsService
         $text = Str::limit(trim($post->title."\n\n".strip_tags($post->content)), 20000, '');
 
         $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
-            ->timeout(120)
+            ->timeout(300)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$provider->api_key}", [
                 'contents' => [['parts' => [['text' => $text]]]],
                 'generationConfig' => [
