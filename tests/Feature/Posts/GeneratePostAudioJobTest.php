@@ -74,6 +74,36 @@ class GeneratePostAudioJobTest extends TestCase
     }
 
     #[Test]
+    public function edit_page_saves_selected_voice_before_dispatching(): void
+    {
+        Queue::fake();
+
+        $post = Post::factory()->create(['user_id' => $this->user->id]);
+
+        Volt::actingAs($this->user)
+            ->test('posts.edit', ['post' => $post])
+            ->set('audioVoice', 'Puck')
+            ->call('generateAudio');
+
+        $this->assertSame('Puck', $post->fresh()->audio_voice);
+    }
+
+    #[Test]
+    public function edit_page_falls_back_to_kore_for_an_unknown_voice(): void
+    {
+        Queue::fake();
+
+        $post = Post::factory()->create(['user_id' => $this->user->id]);
+
+        Volt::actingAs($this->user)
+            ->test('posts.edit', ['post' => $post])
+            ->set('audioVoice', 'NotARealVoice')
+            ->call('generateAudio');
+
+        $this->assertSame('Kore', $post->fresh()->audio_voice);
+    }
+
+    #[Test]
     public function edit_page_does_not_dispatch_when_no_provider_configured(): void
     {
         Queue::fake();

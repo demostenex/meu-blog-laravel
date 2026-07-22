@@ -8,6 +8,7 @@ use App\Models\Tag;
 use App\Services\AiServiceFactory;
 use App\Services\ImagenService;
 use App\Services\ImageService;
+use App\Services\TtsService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Poll;
@@ -56,6 +57,8 @@ new class extends Component
 
     public ?string $audioStatus = null;
 
+    public string $audioVoice = 'Kore';
+
     public ?int $category_id = null;
 
     public array $selectedTagIds = [];
@@ -77,6 +80,7 @@ new class extends Component
         $this->selectedTagIds = $post->tags->pluck('id')->toArray();
         $this->titleEnEdit = $post->title_en ?? '';
         $this->contentEnEdit = $post->content_en ?? '';
+        $this->audioVoice = $post->audio_voice ?? 'Kore';
     }
 
     public function with(): array
@@ -309,7 +313,9 @@ new class extends Component
             return;
         }
 
-        $this->post->update(['audio_status' => 'pending']);
+        $voice = array_key_exists($this->audioVoice, TtsService::VOICES) ? $this->audioVoice : 'Kore';
+
+        $this->post->update(['audio_status' => 'pending', 'audio_voice' => $voice]);
         $this->post->refresh();
 
         GeneratePostAudioJob::dispatch($this->post->id);
@@ -728,11 +734,19 @@ new class extends Component
 
             <!-- Narração em Áudio -->
             <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex items-start justify-between gap-4 mb-4">
                     <div>
                         <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">🔊 Narração em Áudio</h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">A IA gera uma narração em áudio do artigo, tocada numa barra no topo da página pública.</p>
                     </div>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                        <select wire:model="audioVoice"
+                            @if($post->audio_status === 'pending') disabled @endif
+                            class="text-sm rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @foreach(TtsService::VOICES as $voiceName => $voiceDescription)
+                                <option value="{{ $voiceName }}">{{ $voiceName }} — {{ $voiceDescription }}</option>
+                            @endforeach
+                        </select>
                     <button
                         wire:click="generateAudio"
                         wire:loading.attr="disabled"
@@ -753,6 +767,7 @@ new class extends Component
                             </span>
                         @endif
                     </button>
+                    </div>
                 </div>
 
                 @if ($audioStatus === 'success')

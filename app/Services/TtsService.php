@@ -9,6 +9,23 @@ use Illuminate\Support\Str;
 
 class TtsService
 {
+    /**
+     * Vozes pré-definidas do Gemini TTS (subconjunto curado das ~30 disponíveis),
+     * com um descritor curto do timbre pra ajudar na escolha na UI.
+     */
+    public const VOICES = [
+        'Kore' => 'Firme',
+        'Puck' => 'Animada',
+        'Charon' => 'Informativa',
+        'Fenrir' => 'Assertiva',
+        'Aoede' => 'Arejada',
+        'Leda' => 'Jovem',
+        'Orus' => 'Firme',
+        'Zephyr' => 'Brilhante',
+        'Autonoe' => 'Brilhante',
+        'Enceladus' => 'Sussurrada',
+    ];
+
     public function __construct(private readonly AiServiceFactory $factory) {}
 
     public function generateAudio(Post $post, User $user): string
@@ -27,6 +44,7 @@ class TtsService
         // narrações de dezenas de minutos — cujo áudio bruto (PCM) estoura o memory_limit do
         // PHP ao ser decodificado/montado em memória (ver AudioService::storePcmAsWav).
         $text = Str::limit(trim($post->title."\n\n".strip_tags($post->content)), 8000, '');
+        $voice = array_key_exists($post->audio_voice ?? '', self::VOICES) ? $post->audio_voice : 'Kore';
 
         $response = Http::when(app()->isLocal(), fn ($http) => $http->withoutVerifying())
             ->timeout(300)
@@ -35,7 +53,7 @@ class TtsService
                 'generationConfig' => [
                     'responseModalities' => ['AUDIO'],
                     'speechConfig' => [
-                        'voiceConfig' => ['prebuiltVoiceConfig' => ['voiceName' => 'Kore']],
+                        'voiceConfig' => ['prebuiltVoiceConfig' => ['voiceName' => $voice]],
                     ],
                 ],
             ]);
