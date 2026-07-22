@@ -80,6 +80,7 @@ return [
             'bucket' => env('R2_BUCKET'),
             'url' => env('R2_URL'),         // URL pública do bucket (ex: https://pub-xxx.r2.dev ou domínio custom)
             'endpoint' => env('R2_ENDPOINT'), // https://<account_id>.r2.cloudflarestorage.com
+            'root' => env('R2_ROOT', ''),   // prefixo/pasta dentro do bucket (ex: blog)
             'use_path_style_endpoint' => true, // obrigatório para R2
             'throw' => false,
             'report' => false,
