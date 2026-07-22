@@ -1,19 +1,24 @@
 <?php
 
-use Livewire\Volt\Component;
-use Livewire\Attributes\Layout;
 use App\Models\Post;
+use Livewire\Attributes\Layout;
+use Livewire\Volt\Component;
 
-new #[Layout('layouts.blog')] class extends Component {
+new #[Layout('layouts.blog')] class extends Component
+{
     public Post $post;
+
     public string $lang = 'pt';
-    public ?Post $prevPost   = null;
-    public ?Post $nextPost   = null;
+
+    public ?Post $prevPost = null;
+
+    public ?Post $nextPost = null;
+
     public $relatedPosts;
 
     public function mount(Post $post): void
     {
-        $this->post = $post->load('category', 'tags', 'latestAiComment', 'user.defaultAiPersona');
+        $this->post = $post->load('category', 'tags', 'latestAiComment', 'user.defaultAiPersona', 'documents');
 
         if (! $post->isPublished()) {
             abort_if(auth()->id() !== $post->user_id, 404);
@@ -286,6 +291,29 @@ new #[Layout('layouts.blog')] class extends Component {
                                 <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">{{ $related->title }}</p>
                                 <p class="text-xs text-gray-400 mt-1">{{ ($related->published_at ?? $related->created_at)->format('d/m/Y') }}</p>
                             </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            <!-- Documentos para download -->
+            @if($post->documents->isNotEmpty())
+            <div class="mb-12">
+                <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-5 flex items-center gap-3">
+                    <span class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></span>
+                    Documentos para download
+                    <span class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></span>
+                </p>
+                <div class="space-y-3">
+                    @foreach($post->documents as $document)
+                        <a href="{{ image_url($document->path) }}" download="{{ $document->original_filename }}"
+                           class="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-800 p-4 transition-all">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ $document->title }}</p>
+                                <p class="text-xs text-gray-400">{{ human_filesize($document->size) }}</p>
+                            </div>
+                            <span class="text-xs text-blue-500 font-semibold">Baixar &darr;</span>
                         </a>
                     @endforeach
                 </div>
