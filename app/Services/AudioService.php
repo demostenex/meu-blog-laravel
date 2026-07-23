@@ -14,15 +14,37 @@ class AudioService
      */
     public function storePcmAsWav(string $base64Pcm, string $directory): string
     {
-        $pcm = base64_decode($base64Pcm);
-        unset($base64Pcm);
+        return $this->storeConcatenatedPcmAsWav([$base64Pcm], $directory);
+    }
 
+    /**
+     * Mesma ideia de storePcmAsWav(), mas para vários pedaços de PCM (um por trecho de
+     * texto sintetizado separadamente) concatenados num único WAV — necessário porque
+     * uma única chamada de TTS não cobre textos muito longos (ver TtsService::generateAudio).
+     * Escreve tudo em streaming direto num arquivo temporário, sem nunca montar o áudio
+     * inteiro numa string só em memória.
+     *
+     * @param  string[]  $base64PcmChunks
+     */
+    public function storeConcatenatedPcmAsWav(array $base64PcmChunks, string $directory): string
+    {
         $tmpFile = tempnam(sys_get_temp_dir(), 'audio_');
         $handle = fopen($tmpFile, 'wb');
-        fwrite($handle, $this->wavHeader(strlen($pcm)));
-        fwrite($handle, $pcm);
+
+        // Reserva os 44 bytes do cabeçalho — só sabemos o tamanho total dos dados no final.
+        fseek($handle, 44);
+
+        $totalBytes = 0;
+        foreach ($base64PcmChunks as $base64Pcm) {
+            $pcm = base64_decode($base64Pcm);
+            $totalBytes += strlen($pcm);
+            fwrite($handle, $pcm);
+            unset($pcm);
+        }
+
+        fseek($handle, 0);
+        fwrite($handle, $this->wavHeader($totalBytes));
         fclose($handle);
-        unset($pcm);
 
         $path = $directory.'/'.Str::uuid().'.wav';
 

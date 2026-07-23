@@ -737,7 +737,7 @@ new class extends Component
                 <div class="flex items-start justify-between gap-4 mb-4">
                     <div>
                         <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">🔊 Narração em Áudio</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">A IA gera uma narração em áudio do artigo, tocada numa barra no topo da página pública.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">A IA gera uma narração em áudio do artigo, tocada numa barra no topo da página pública. Posts longos são divididos em partes — pode levar vários minutos.</p>
                     </div>
                     <div class="flex flex-col items-end gap-2 shrink-0">
                         <select wire:model="audioVoice"
