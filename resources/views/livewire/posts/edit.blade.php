@@ -777,7 +777,7 @@ new class extends Component
                 @endif
 
                 @if ($post->audio_path)
-                    <audio controls class="w-full mt-2" src="{{ image_url($post->audio_path) }}"></audio>
+                    <audio controls class="w-full mt-2 dark:[color-scheme:dark]" src="{{ image_url($post->audio_path) }}"></audio>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
                         Gerado em {{ $post->audio_generated_at?->format('d/m/Y H:i') }}.
                         @if($post->audio_generated_at && $post->updated_at->gt($post->audio_generated_at))
