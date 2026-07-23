@@ -13,9 +13,14 @@ class GeneratePostAudioJob implements ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 360;
+    // Posts longos viram vários pedaços de texto sintetizados em série (ver
+    // TtsService::CHUNK_SIZE/MAX_TOTAL_CHARS) — cada chamada pode legitimamente levar
+    // minutos, então o timeout total precisa de bastante folga.
+    public int $timeout = 3600;
 
-    public int $tries = 2;
+    // Cada pedaço já tenta de novo sozinho dentro de TtsService::synthesizeChunk() — um
+    // retry aqui no job inteiro refaria do zero os pedaços que já tinham dado certo.
+    public int $tries = 1;
 
     public function __construct(public readonly int $postId) {}
 

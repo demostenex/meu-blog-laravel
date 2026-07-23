@@ -56,4 +56,32 @@ class AudioServiceTest extends TestCase
 
         $this->assertNotEquals($path1, $path2);
     }
+
+    #[Test]
+    public function store_concatenated_pcm_as_wav_combines_chunks_in_order_into_one_file(): void
+    {
+        $service = app(AudioService::class);
+        $chunk1 = str_repeat("\x00\x01", 50);
+        $chunk2 = str_repeat("\x02\x03", 70);
+
+        $path = $service->storeConcatenatedPcmAsWav([base64_encode($chunk1), base64_encode($chunk2)], 'post-audio');
+        $contents = Storage::disk('public')->get($path);
+
+        $this->assertSame('RIFF', substr($contents, 0, 4));
+        $this->assertSame('WAVE', substr($contents, 8, 4));
+        $this->assertSame(44 + strlen($chunk1) + strlen($chunk2), strlen($contents));
+        $this->assertSame($chunk1.$chunk2, substr($contents, 44));
+    }
+
+    #[Test]
+    public function store_concatenated_pcm_as_wav_works_with_a_single_chunk(): void
+    {
+        $service = app(AudioService::class);
+        $chunk = str_repeat("\x00\x01", 100);
+
+        $path = $service->storeConcatenatedPcmAsWav([base64_encode($chunk)], 'post-audio');
+        $contents = Storage::disk('public')->get($path);
+
+        $this->assertSame(44 + strlen($chunk), strlen($contents));
+    }
 }
