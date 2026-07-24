@@ -192,6 +192,50 @@ new #[Layout('layouts.blog')] class extends Component
                 @endif
             </header>
 
+            <!-- Documentos para download -->
+            @if($post->documents->isNotEmpty())
+            @php $documentCount = $post->documents->count(); @endphp
+            <details class="downloads-panel mb-6 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/70">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                            </svg>
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">Arquivos do artigo</span>
+                            <span class="block text-xs text-gray-500 dark:text-gray-400">
+                                {{ $documentCount }} {{ $documentCount === 1 ? 'arquivo disponível' : 'arquivos disponíveis' }}
+                            </span>
+                        </span>
+                    </div>
+                    <span class="flex shrink-0 items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        <span class="hidden sm:inline">Mostrar</span>
+                        <svg class="downloads-chevron h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                </summary>
+                <div class="space-y-2 border-t border-gray-100 dark:border-gray-800 px-3 py-3">
+                    @foreach($post->documents as $document)
+                        <a href="{{ image_url($document->path) }}" download="{{ $document->original_filename }}"
+                           class="flex items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/70">
+                            <span class="flex h-8 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                {{ Str::upper(pathinfo($document->original_filename, PATHINFO_EXTENSION) ?: 'file') }}
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ $document->title }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $document->original_filename }} &bull; {{ human_filesize($document->size) }}</p>
+                            </div>
+                            <span class="shrink-0 text-xs font-semibold text-blue-600 dark:text-blue-400">Baixar</span>
+                        </a>
+                    @endforeach
+                </div>
+            </details>
+            @endif
+
             <!-- Narração em Áudio -->
             @if($post->audio_path)
             <div class="mb-8 flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 px-4 py-3">
@@ -214,6 +258,9 @@ new #[Layout('layouts.blog')] class extends Component
                 #article-content h3 { font-size: 1.125rem; line-height: 1.5rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; color: inherit; }
                 #article-content strong { color: inherit; font-weight: 700; }
                 #article-content p { margin-bottom: 1.5rem; }
+                .downloads-panel > summary { list-style: none; }
+                .downloads-panel > summary::-webkit-details-marker { display: none; }
+                .downloads-panel[open] .downloads-chevron { transform: rotate(180deg); }
             </style>
             <div id="article-content" class="trix-content text-gray-800 dark:text-gray-200 leading-relaxed text-base sm:text-lg selection:bg-blue-100 dark:selection:bg-blue-900">
                 @if($lang === 'en' && $post->content_en)
@@ -299,29 +346,6 @@ new #[Layout('layouts.blog')] class extends Component
                                 <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">{{ $related->title }}</p>
                                 <p class="text-xs text-gray-400 mt-1">{{ ($related->published_at ?? $related->created_at)->format('d/m/Y') }}</p>
                             </div>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-
-            <!-- Documentos para download -->
-            @if($post->documents->isNotEmpty())
-            <div class="mb-12">
-                <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-5 flex items-center gap-3">
-                    <span class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></span>
-                    Documentos para download
-                    <span class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></span>
-                </p>
-                <div class="space-y-3">
-                    @foreach($post->documents as $document)
-                        <a href="{{ image_url($document->path) }}" download="{{ $document->original_filename }}"
-                           class="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-800 p-4 transition-all">
-                            <div class="min-w-0 flex-1">
-                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ $document->title }}</p>
-                                <p class="text-xs text-gray-400">{{ human_filesize($document->size) }}</p>
-                            </div>
-                            <span class="text-xs text-blue-500 font-semibold">Baixar &darr;</span>
                         </a>
                     @endforeach
                 </div>

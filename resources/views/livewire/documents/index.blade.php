@@ -28,7 +28,7 @@ new class extends Component
     public function with(): array
     {
         return [
-            'documents' => Document::with('post')->latest()->get(),
+            'documents' => Document::with('posts')->withCount('posts')->latest()->get(),
             'posts' => Post::orderBy('title')->get(['id', 'title']),
         ];
     }
@@ -42,7 +42,7 @@ new class extends Component
         $size = $this->file->getSize();
         $path = $this->file->store('documents', config('filesystems.image_disk', 'public'));
 
-        Document::create([
+        $document = Document::create([
             'post_id' => $this->post_id,
             'title' => $this->title,
             'path' => $path,
@@ -50,6 +50,10 @@ new class extends Component
             'mime_type' => $mimeType,
             'size' => $size,
         ]);
+
+        if ($this->post_id) {
+            $document->posts()->attach($this->post_id);
+        }
 
         $this->reset('title', 'post_id', 'file');
         session()->flash('status', 'Documento enviado!');
@@ -89,7 +93,7 @@ new class extends Component
                         <x-input-error :messages="$errors->get('title')" class="mt-1" />
                     </div>
                     <div>
-                        <x-input-label for="post_id" value="Vincular a um post (opcional)" />
+                        <x-input-label for="post_id" value="Vincular a um post agora (opcional)" />
                         <select wire:model="post_id" id="post_id"
                             class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="">— Nenhum (documento avulso) —</option>
@@ -126,8 +130,11 @@ new class extends Component
                             </div>
                             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                                 {{ $document->original_filename }}
-                                @if($document->post)
-                                    &bull; vinculado a <span class="italic">{{ $document->post->title }}</span>
+                                @if($document->posts_count)
+                                    &bull; vinculado a {{ $document->posts_count }} {{ $document->posts_count === 1 ? 'artigo' : 'artigos' }}
+                                    @if($document->posts_count === 1 && $document->posts->first())
+                                        (<span class="italic">{{ $document->posts->first()->title }}</span>)
+                                    @endif
                                 @endif
                             </p>
                         </div>
