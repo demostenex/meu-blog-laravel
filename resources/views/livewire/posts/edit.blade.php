@@ -3,6 +3,7 @@
 use App\Jobs\GenerateEnglishVersionJob;
 use App\Jobs\GeneratePostAudioJob;
 use App\Models\Category;
+use App\Models\Document;
 use App\Models\Post;
 use App\Models\Tag;
 use App\Services\AiServiceFactory;
@@ -65,6 +66,12 @@ new class extends Component
 
     public string $newTag = '';
 
+    public string $documentTitle = '';
+
+    public array $documentFiles = [];
+
+    public ?int $documentToAttach = null;
+
     public function mount(Post $post)
     {
         abort_if($post->user_id !== auth()->id(), 403);
@@ -88,6 +95,11 @@ new class extends Component
         return [
             'categories' => Category::orderBy('name')->get(),
             'allTags' => Tag::orderBy('name')->get(),
+            'attachedDocuments' => $this->post->documents()->withCount('posts')->latest('documents.created_at')->get(),
+            'availableDocuments' => Document::whereDoesntHave('posts', fn ($query) => $query->where('posts.id', $this->post->id))
+                ->withCount('posts')
+                ->latest()
+                ->get(),
         ];
     }
 
@@ -142,6 +154,89 @@ new class extends Component
         $path = $this->trixVideo->store('post-videos', config('filesystems.image_disk', 'public'));
         $this->dispatch('trix-video-ready', url: image_url($path));
         $this->trixVideo = null;
+    }
+
+    public function uploadDocument(): void
+    {
+        $this->validate([
+            'documentTitle' => 'nullable|string|max:255',
+            'documentFiles' => 'required|array|min:1|max:10',
+            'documentFiles.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip|max:10240',
+        ]);
+
+        $multiple = count($this->documentFiles) > 1;
+
+        foreach ($this->documentFiles as $file) {
+            $originalName = $file->getClientOriginalName();
+            $path = $file->store('documents', config('filesystems.image_disk', 'public'));
+
+            $document = Document::create([
+                'post_id' => $this->post->id,
+                'title' => $this->uploadedDocumentTitle($originalName, $multiple),
+                'path' => $path,
+                'original_filename' => $originalName,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+            ]);
+
+            $this->post->documents()->attach($document->id);
+        }
+
+        $uploadedCount = count($this->documentFiles);
+
+        $this->reset('documentTitle', 'documentFiles');
+        session()->flash('documents-status', $uploadedCount === 1 ? 'Arquivo vinculado ao artigo.' : "{$uploadedCount} arquivos vinculados ao artigo.");
+    }
+
+    private function uploadedDocumentTitle(string $originalName, bool $multiple): string
+    {
+        $fileTitle = trim(pathinfo($originalName, PATHINFO_FILENAME)) ?: $originalName;
+        $baseTitle = trim($this->documentTitle);
+
+        if ($baseTitle === '') {
+            return $fileTitle;
+        }
+
+        return $multiple ? "{$baseTitle} - {$fileTitle}" : $baseTitle;
+    }
+
+    public function attachDocument(): void
+    {
+        $this->validate(['documentToAttach' => 'required|exists:documents,id']);
+
+        $document = Document::whereDoesntHave('posts', fn ($query) => $query->where('posts.id', $this->post->id))
+            ->findOrFail($this->documentToAttach);
+
+        $this->post->documents()->attach($document->id);
+
+        if ($document->post_id === null) {
+            $document->update(['post_id' => $this->post->id]);
+        }
+
+        $this->reset('documentToAttach');
+        session()->flash('documents-status', 'Arquivo vinculado ao artigo.');
+    }
+
+    public function detachDocument(int $id): void
+    {
+        $document = $this->post->documents()->findOrFail($id);
+        $this->post->documents()->detach($document->id);
+
+        if ((int) $document->post_id === $this->post->id) {
+            $document->update(['post_id' => $document->posts()->value('posts.id')]);
+        }
+
+        session()->flash('documents-status', 'Arquivo desvinculado do artigo.');
+    }
+
+    public function deleteDocument(int $id): void
+    {
+        $document = $this->post->documents()->findOrFail($id);
+
+        Storage::disk(config('filesystems.image_disk', 'public'))->delete($document->path);
+        $document->delete();
+
+        session()->flash('documents-status', 'Arquivo removido.');
     }
 
     private function updatePost(): void
@@ -607,6 +702,101 @@ new class extends Component
                     @endif
                 </form>
 
+            </div>
+
+            <!-- Arquivos do Artigo -->
+            <div class="mt-8 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Arquivos do artigo</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Arquivos vinculados aqui aparecem para download na página pública deste artigo.</p>
+                    </div>
+                    <a href="{{ route('documents.index') }}" wire:navigate
+                       class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+                        Abrir biblioteca
+                    </a>
+                </div>
+
+                @if(session('documents-status'))
+                    <div class="mb-4 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm px-4 py-3 rounded-lg">
+                        {{ session('documents-status') }}
+                    </div>
+                @endif
+
+                <form wire:submit="uploadDocument" class="grid grid-cols-1 md:grid-cols-[1fr_1.2fr_auto] gap-3 items-end mb-5">
+                    <div>
+                        <x-input-label for="documentTitle" value="Título base" />
+                        <x-text-input wire:model="documentTitle" id="documentTitle" type="text" class="mt-1 block w-full text-sm" placeholder="Opcional" />
+                        <x-input-error :messages="$errors->get('documentTitle')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="documentFiles" value="Arquivos" />
+                        <input wire:model="documentFiles" id="documentFiles" type="file" multiple
+                            class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300" />
+                        <div wire:loading wire:target="documentFiles" class="text-xs text-gray-400 mt-1">Enviando arquivos...</div>
+                        <x-input-error :messages="$errors->get('documentFiles')" class="mt-1" />
+                        <x-input-error :messages="$errors->get('documentFiles.*')" class="mt-1" />
+                    </div>
+                    <x-primary-button type="submit" wire:loading.attr="disabled" wire:target="uploadDocument,documentFiles" class="justify-center">
+                        <span wire:loading.remove wire:target="uploadDocument">Vincular</span>
+                        <span wire:loading wire:target="uploadDocument">Salvando...</span>
+                    </x-primary-button>
+                </form>
+
+                @if($availableDocuments->isNotEmpty())
+                    <form wire:submit="attachDocument" class="flex flex-col sm:flex-row gap-3 items-start sm:items-end border-t border-gray-100 dark:border-gray-700 pt-5 mb-5">
+                        <div class="w-full">
+                            <x-input-label for="documentToAttach" value="Vincular arquivo da biblioteca" />
+                            <select wire:model="documentToAttach" id="documentToAttach"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <option value="">Selecione um documento</option>
+                                @foreach($availableDocuments as $document)
+                                    <option value="{{ $document->id }}">
+                                        {{ $document->title }} - {{ $document->original_filename }} ({{ human_filesize($document->size) }}, {{ $document->posts_count }} {{ $document->posts_count === 1 ? 'artigo' : 'artigos' }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('documentToAttach')" class="mt-1" />
+                        </div>
+                        <x-secondary-button type="submit" wire:loading.attr="disabled" wire:target="attachDocument" class="justify-center whitespace-nowrap">
+                            Vincular existente
+                        </x-secondary-button>
+                    </form>
+                @endif
+
+                <div class="border-t border-gray-100 dark:border-gray-700 pt-5">
+                    @forelse($attachedDocuments as $document)
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 {{ ! $loop->last ? 'border-b border-gray-100 dark:border-gray-700' : '' }}">
+                            <div class="min-w-0">
+                                <a href="{{ image_url($document->path) }}" target="_blank"
+                                   class="font-semibold text-sm text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                    {{ $document->title }}
+                                </a>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                                    {{ $document->original_filename }} &bull; {{ human_filesize($document->size) }} &bull; {{ $document->posts_count }} {{ $document->posts_count === 1 ? 'artigo' : 'artigos' }}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <button wire:click="detachDocument({{ $document->id }})"
+                                    wire:confirm="Desvincular '{{ $document->title }}' deste artigo?"
+                                    type="button"
+                                    class="text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+                                    Desvincular
+                                </button>
+                                <button wire:click="deleteDocument({{ $document->id }})"
+                                    wire:confirm="Remover '{{ $document->title }}' da biblioteca? O arquivo será apagado de todos os artigos."
+                                    type="button"
+                                    class="text-sm text-red-600 dark:text-red-400 hover:underline">
+                                    Excluir da biblioteca
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-sm text-gray-400 dark:text-gray-500 italic">
+                            Nenhum arquivo vinculado a este artigo.
+                        </div>
+                    @endforelse
+                </div>
             </div>
 
             <!-- Seção IA Comentarista -->
