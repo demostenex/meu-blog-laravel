@@ -194,7 +194,7 @@ new class extends Component
                                                 @if(!$post->isPublished())
                                                     <button wire:click="publishPost({{ $post->id }})" class="font-medium text-green-600 dark:text-green-500 hover:underline">Publicar</button>
                                                 @endif
-                                                <a href="{{ route('posts.show', $post->slug) }}" target="_blank" class="font-medium text-gray-500 dark:text-gray-400 hover:underline">Ver</a>
+                                                <a href="{{ $post->isPublished() ? route('posts.show', $post->slug) : route('posts.preview', $post) }}" target="_blank" class="font-medium text-gray-500 dark:text-gray-400 hover:underline">Ver</a>
                                                 <a href="{{ route('posts.edit', $post) }}" wire:navigate class="font-medium text-blue-600 dark:text-blue-500 hover:underline">Editar</a>
                                                 <button wire:click="deletePost({{ $post->id }})" wire:confirm="Tem certeza que deseja apagar este artigo?" class="font-medium text-red-600 dark:text-red-500 hover:underline">Apagar</button>
                                             </div>

@@ -30,6 +30,7 @@ Route::middleware(['auth', 'verified', 'doNotCacheResponse'])->group(function ()
     Volt::route('dashboard', 'dashboard')->name('dashboard');
     Volt::route('posts', 'posts.index')->name('posts.index');
     Volt::route('posts/create', 'posts.create')->name('posts.create');
+    Volt::route('posts/{post}/preview', 'posts.show')->name('posts.preview');
     Volt::route('posts/{post}/edit', 'posts.edit')->name('posts.edit');
     Volt::route('categorias', 'categories.index')->name('categories.index');
     Volt::route('documentos', 'documents.index')->name('documents.index');

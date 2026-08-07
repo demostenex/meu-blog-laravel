@@ -24,15 +24,17 @@ new #[Layout('layouts.blog')] class extends Component
             abort_if(auth()->id() !== $post->user_id, 404);
         }
 
-        $this->prevPost = Post::published()
-            ->where('published_at', '<', $post->published_at)
-            ->orderByDesc('published_at')
-            ->first(['id', 'title', 'slug']);
+        if ($post->published_at) {
+            $this->prevPost = Post::published()
+                ->where('published_at', '<', $post->published_at)
+                ->orderByDesc('published_at')
+                ->first(['id', 'title', 'slug']);
 
-        $this->nextPost = Post::published()
-            ->where('published_at', '>', $post->published_at)
-            ->orderBy('published_at')
-            ->first(['id', 'title', 'slug']);
+            $this->nextPost = Post::published()
+                ->where('published_at', '>', $post->published_at)
+                ->orderBy('published_at')
+                ->first(['id', 'title', 'slug']);
+        }
 
         $tagIds = $post->tags->pluck('id');
 
@@ -561,6 +563,8 @@ new #[Layout('layouts.blog')] class extends Component
         window.addEventListener('language-changed', () => requestAnimationFrame(buildToc));
     </script>
 
+    @guest
+    @if($post->isPublished())
     <script>
     (function () {
         var sent = false;
@@ -614,6 +618,8 @@ new #[Layout('layouts.blog')] class extends Component
         window.addEventListener('beforeunload', send);
     })();
     </script>
+    @endif
+    @endguest
 
     <style>
         /* Estilos Semânticos para o Conteúdo do Artigo (Trix) */

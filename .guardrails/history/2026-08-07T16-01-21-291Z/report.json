@@ -1,0 +1,414 @@
+{
+  "projectName": "blog",
+  "generatedAt": "2026-08-07T16:01:21.291Z",
+  "filesScanned": 157,
+  "score": 77,
+  "findings": [
+    {
+      "id": "long_function::app/Console/Commands/SyncMediaToR2.php::Function handle has 108 lines, above the limit of 80.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "long_function",
+      "severity": "high",
+      "file": "app/Console/Commands/SyncMediaToR2.php",
+      "line": 18,
+      "message": "Function handle has 108 lines, above the limit of 80.",
+      "recommendation": "Extract cohesive steps into named functions or a service."
+    },
+    {
+      "id": "large_service::app/Services/TtsService.php::Service TtsService has 15 methods, above the limit of 12.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "large_service",
+      "severity": "high",
+      "file": "app/Services/TtsService.php",
+      "line": 10,
+      "message": "Service TtsService has 15 methods, above the limit of 12.",
+      "recommendation": "Split the service by responsibility or use case."
+    },
+    {
+      "id": "duplicate_functions::resources/views/livewire/posts/create.blade.php|resources/views/livewire/posts/edit.blade.php::Functions rules, rules have duplicated bodies.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "duplicate_functions",
+      "severity": "high",
+      "files": [
+        "resources/views/livewire/posts/create.blade.php",
+        "resources/views/livewire/posts/edit.blade.php"
+      ],
+      "message": "Functions rules, rules have duplicated bodies.",
+      "recommendation": "Consolidate the duplicated logic behind one shared function or service.",
+      "details": {
+        "functions": [
+          {
+            "name": "rules",
+            "file": "resources/views/livewire/posts/create.blade.php",
+            "line": 32
+          },
+          {
+            "name": "rules",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 128
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate_functions::resources/views/livewire/posts/create.blade.php|resources/views/livewire/posts/edit.blade.php::Functions toggleTag, toggleTag have duplicated bodies.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "duplicate_functions",
+      "severity": "high",
+      "files": [
+        "resources/views/livewire/posts/create.blade.php",
+        "resources/views/livewire/posts/edit.blade.php"
+      ],
+      "message": "Functions toggleTag, toggleTag have duplicated bodies.",
+      "recommendation": "Consolidate the duplicated logic behind one shared function or service.",
+      "details": {
+        "functions": [
+          {
+            "name": "toggleTag",
+            "file": "resources/views/livewire/posts/create.blade.php",
+            "line": 55
+          },
+          {
+            "name": "toggleTag",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 106
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate_functions::resources/views/livewire/posts/create.blade.php|resources/views/livewire/posts/edit.blade.php::Functions addNewTag, addNewTag have duplicated bodies.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "duplicate_functions",
+      "severity": "high",
+      "files": [
+        "resources/views/livewire/posts/create.blade.php",
+        "resources/views/livewire/posts/edit.blade.php"
+      ],
+      "message": "Functions addNewTag, addNewTag have duplicated bodies.",
+      "recommendation": "Consolidate the duplicated logic behind one shared function or service.",
+      "details": {
+        "functions": [
+          {
+            "name": "addNewTag",
+            "file": "resources/views/livewire/posts/create.blade.php",
+            "line": 64
+          },
+          {
+            "name": "addNewTag",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 115
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate_functions::resources/views/livewire/posts/create.blade.php|resources/views/livewire/posts/edit.blade.php::Functions storeTrixImage, storeTrixImage have duplicated bodies.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "duplicate_functions",
+      "severity": "high",
+      "files": [
+        "resources/views/livewire/posts/create.blade.php",
+        "resources/views/livewire/posts/edit.blade.php"
+      ],
+      "message": "Functions storeTrixImage, storeTrixImage have duplicated bodies.",
+      "recommendation": "Consolidate the duplicated logic behind one shared function or service.",
+      "details": {
+        "functions": [
+          {
+            "name": "storeTrixImage",
+            "file": "resources/views/livewire/posts/create.blade.php",
+            "line": 77
+          },
+          {
+            "name": "storeTrixImage",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 143
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate_functions::resources/views/livewire/posts/create.blade.php|resources/views/livewire/posts/edit.blade.php::Functions storeTrixVideo, storeTrixVideo have duplicated bodies.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "duplicate_functions",
+      "severity": "high",
+      "files": [
+        "resources/views/livewire/posts/create.blade.php",
+        "resources/views/livewire/posts/edit.blade.php"
+      ],
+      "message": "Functions storeTrixVideo, storeTrixVideo have duplicated bodies.",
+      "recommendation": "Consolidate the duplicated logic behind one shared function or service.",
+      "details": {
+        "functions": [
+          {
+            "name": "storeTrixVideo",
+            "file": "resources/views/livewire/posts/create.blade.php",
+            "line": 85
+          },
+          {
+            "name": "storeTrixVideo",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 151
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate_functions::resources/views/livewire/posts/create.blade.php|resources/views/livewire/posts/edit.blade.php::Functions update, update have duplicated bodies.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "duplicate_functions",
+      "severity": "high",
+      "files": [
+        "resources/views/livewire/posts/create.blade.php",
+        "resources/views/livewire/posts/edit.blade.php"
+      ],
+      "message": "Functions update, update have duplicated bodies.",
+      "recommendation": "Consolidate the duplicated logic behind one shared function or service.",
+      "details": {
+        "functions": [
+          {
+            "name": "update",
+            "file": "resources/views/livewire/posts/create.blade.php",
+            "line": 394
+          },
+          {
+            "name": "update",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 1034
+          }
+        ]
+      }
+    },
+    {
+      "id": "long_function::resources/views/livewire/posts/show.blade.php::Function buildToc has 134 lines, above the limit of 80.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "long_function",
+      "severity": "high",
+      "file": "resources/views/livewire/posts/show.blade.php",
+      "line": 426,
+      "message": "Function buildToc has 134 lines, above the limit of 80.",
+      "recommendation": "Extract cohesive steps into named functions or a service."
+    },
+    {
+      "id": "similar_functions::app/Services/AiServiceFactory.php|app/Services/AiServiceFactory.php::Functions imageModelFor, audioModelFor are structurally similar.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "similar_functions",
+      "severity": "medium",
+      "files": [
+        "app/Services/AiServiceFactory.php",
+        "app/Services/AiServiceFactory.php"
+      ],
+      "message": "Functions imageModelFor, audioModelFor are structurally similar.",
+      "recommendation": "Review whether the shared structure is intentional or should be extracted.",
+      "details": {
+        "similarity": 1,
+        "functions": [
+          {
+            "name": "imageModelFor",
+            "file": "app/Services/AiServiceFactory.php",
+            "line": 43
+          },
+          {
+            "name": "audioModelFor",
+            "file": "app/Services/AiServiceFactory.php",
+            "line": 53
+          }
+        ]
+      }
+    },
+    {
+      "id": "similar_functions::resources/views/layouts/app.blade.php|resources/views/layouts/blog.blade.php::Functions setDarkMode, setDarkMode are structurally similar.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "similar_functions",
+      "severity": "medium",
+      "files": [
+        "resources/views/layouts/app.blade.php",
+        "resources/views/layouts/blog.blade.php"
+      ],
+      "message": "Functions setDarkMode, setDarkMode are structurally similar.",
+      "recommendation": "Review whether the shared structure is intentional or should be extracted.",
+      "details": {
+        "similarity": 0.91,
+        "functions": [
+          {
+            "name": "setDarkMode",
+            "file": "resources/views/layouts/app.blade.php",
+            "line": 20
+          },
+          {
+            "name": "setDarkMode",
+            "file": "resources/views/layouts/blog.blade.php",
+            "line": 47
+          }
+        ]
+      }
+    },
+    {
+      "id": "large_file::resources/views/livewire/dashboard.blade.php::File has 415 lines, above the limit of 400.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "large_file",
+      "severity": "medium",
+      "file": "resources/views/livewire/dashboard.blade.php",
+      "line": 1,
+      "message": "File has 415 lines, above the limit of 400.",
+      "recommendation": "Split unrelated responsibilities into smaller modules."
+    },
+    {
+      "id": "large_file::resources/views/livewire/posts/create.blade.php::File has 515 lines, above the limit of 400.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "large_file",
+      "severity": "medium",
+      "file": "resources/views/livewire/posts/create.blade.php",
+      "line": 1,
+      "message": "File has 515 lines, above the limit of 400.",
+      "recommendation": "Split unrelated responsibilities into smaller modules."
+    },
+    {
+      "id": "large_file::resources/views/livewire/posts/edit.blade.php::File has 1155 lines, above the limit of 400.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "large_file",
+      "severity": "medium",
+      "file": "resources/views/livewire/posts/edit.blade.php",
+      "line": 1,
+      "message": "File has 1155 lines, above the limit of 400.",
+      "recommendation": "Split unrelated responsibilities into smaller modules."
+    },
+    {
+      "id": "similar_functions::resources/views/livewire/posts/edit.blade.php|resources/views/livewire/posts/edit.blade.php::Functions refreshEnglishStatus, refreshAudioStatus are structurally similar.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "similar_functions",
+      "severity": "medium",
+      "files": [
+        "resources/views/livewire/posts/edit.blade.php",
+        "resources/views/livewire/posts/edit.blade.php"
+      ],
+      "message": "Functions refreshEnglishStatus, refreshAudioStatus are structurally similar.",
+      "recommendation": "Review whether the shared structure is intentional or should be extracted.",
+      "details": {
+        "similarity": 1,
+        "functions": [
+          {
+            "name": "refreshEnglishStatus",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 383
+          },
+          {
+            "name": "refreshAudioStatus",
+            "file": "resources/views/livewire/posts/edit.blade.php",
+            "line": 420
+          }
+        ]
+      }
+    },
+    {
+      "id": "large_file::resources/views/livewire/posts/show.blade.php::File has 665 lines, above the limit of 400.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "large_file",
+      "severity": "medium",
+      "file": "resources/views/livewire/posts/show.blade.php",
+      "line": 1,
+      "message": "File has 665 lines, above the limit of 400.",
+      "recommendation": "Split unrelated responsibilities into smaller modules."
+    },
+    {
+      "id": "large_file::resources/views/livewire/settings/ai-providers.blade.php::File has 665 lines, above the limit of 400.",
+      "policy": "warn",
+      "status": "new",
+      "ruleId": "large_file",
+      "severity": "medium",
+      "file": "resources/views/livewire/settings/ai-providers.blade.php",
+      "line": 1,
+      "message": "File has 665 lines, above the limit of 400.",
+      "recommendation": "Split unrelated responsibilities into smaller modules."
+    }
+  ],
+  "config": {
+    "project": {
+      "name": "blog",
+      "language": "javascript"
+    },
+    "scan": {
+      "include": [
+        "src/**/*.js",
+        "src/**/*.ts",
+        "src/**/*.jsx",
+        "src/**/*.tsx",
+        "**/app/**/*.php",
+        "**/routes/**/*.php",
+        "**/config/**/*.php",
+        "**/database/migrations/**/*.php",
+        "**/database/seeders/**/*.php",
+        "**/database/factories/**/*.php",
+        "**/resources/views/**/*.blade.php",
+        "**/resources/js/**/*.js",
+        "**/resources/js/**/*.ts"
+      ],
+      "exclude": [
+        ".git/**",
+        ".guardrails/**",
+        "node_modules/**",
+        "vendor/**",
+        "dist/**",
+        "build/**",
+        "coverage/**"
+      ]
+    },
+    "rules": {
+      "max_file_lines": 400,
+      "max_function_lines": 80,
+      "max_service_methods": 12,
+      "min_duplicate_body_chars": 40,
+      "min_similar_body_tokens": 35,
+      "similar_function_threshold": 0.9
+    },
+    "policies": {
+      "architecture_violation": "block",
+      "duplicate_functions": "warn",
+      "large_file": "warn",
+      "large_service": "warn",
+      "long_function": "warn",
+      "similar_functions": "warn",
+      "todo_comment": "warn",
+      "vibe_large_change_surface": "warn"
+    },
+    "frameworks": {
+      "auto_detect": true,
+      "enabled": []
+    },
+    "architecture": {
+      "layers": [
+        "ui",
+        "app",
+        "domain",
+        "services",
+        "infra"
+      ],
+      "forbidden_imports": []
+    },
+    "vibe": {
+      "max_files_changed_for_small_diff": 8,
+      "warn_on_unconnected_new_files": true,
+      "warn_on_duplicate_service_intent": true,
+      "warn_on_many_new_abstractions": true
+    },
+    "ignore": []
+  },
+  "historyId": "2026-08-07T16-01-21-291Z"
+}
