@@ -9,7 +9,7 @@ new #[Layout('layouts.blog')] class extends Component
     public function with(): array
     {
         return [
-            'documents' => Document::with('post')->latest()->paginate(12),
+            'documents' => Document::with('posts')->withCount('posts')->latest()->paginate(12),
         ];
     }
 }; ?>
@@ -47,9 +47,14 @@ new #[Layout('layouts.blog')] class extends Component
                     </p>
                     <div class="flex items-center gap-2 mt-1 text-xs text-gray-400">
                         <span>{{ human_filesize($document->size) }}</span>
-                        @if($document->post)
+                        @if($document->posts_count)
                             <span>&bull;</span>
-                            <span>do artigo <span class="italic">{{ $document->post->title }}</span></span>
+                            <span>
+                                em {{ $document->posts_count }} {{ $document->posts_count === 1 ? 'artigo' : 'artigos' }}
+                                @if($document->posts_count === 1 && $document->posts->first())
+                                    (<span class="italic">{{ $document->posts->first()->title }}</span>)
+                                @endif
+                            </span>
                         @endif
                     </div>
                 </div>

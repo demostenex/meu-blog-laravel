@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Jobs\RecordPageViewJob;
+use App\Support\TrafficClassifier;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -10,15 +11,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class TrackPageView
 {
-    private const BOT_PATTERNS = [
-        'bot', 'spider', 'crawl', 'slurp', 'curl', 'wget', 'python',
-        'java', 'ruby', 'go-http', 'httpclient', 'libwww', 'archive',
-        'facebookexternalhit', 'ia_archiver', 'whatsapp', 'telegram',
-        'linkedinbot', 'twitterbot', 'discordbot', 'slack',
-        'headlesschrome', 'lighthouse', 'electron', 'phantomjs',
-        'selenium', 'puppeteer', 'playwright',
-    ];
-
     private const IGNORED_PATHS = [
         'login', 'logout', 'register', 'password',
         'wp-admin', 'wp-login', 'xmlrpc', 'wp-includes',
@@ -42,7 +34,7 @@ class TrackPageView
                 ipHash:    hash('sha256', $request->ip() . config('app.key')),
                 userAgent: $ua ?: null,
                 viewToken: $viewToken,
-                isBot:     $this->isBot($ua),
+                isBot:     TrafficClassifier::isBot($ua),
             ));
         }
 
@@ -59,6 +51,10 @@ class TrackPageView
             return false;
         }
 
+        if (TrafficClassifier::isPrefetch($request)) {
+            return false;
+        }
+
         $path = $request->path();
         foreach (self::IGNORED_PATHS as $ignored) {
             if (str_contains($path, $ignored)) {
@@ -67,19 +63,6 @@ class TrackPageView
         }
 
         return true;
-    }
-
-    private function isBot(string $ua): bool
-    {
-        $ua = strtolower($ua);
-
-        foreach (self::BOT_PATTERNS as $pattern) {
-            if (str_contains($ua, $pattern)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function extractReferrer(Request $request): ?string

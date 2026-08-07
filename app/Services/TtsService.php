@@ -62,7 +62,8 @@ class TtsService
         $model = $this->factory->audioModelFor($provider);
         $voice = array_key_exists($post->audio_voice ?? '', self::VOICES) ? $post->audio_voice : 'Kore';
 
-        $fullText = Str::limit(trim($post->title."\n\n".strip_tags($post->content)), self::MAX_TOTAL_CHARS, '');
+        $content = $this->stripNonNarratableElements($post->content);
+        $fullText = Str::limit(trim($post->title."\n\n".strip_tags($content)), self::MAX_TOTAL_CHARS, '');
         $chunks = $this->splitIntoChunks($fullText, self::CHUNK_SIZE);
 
         $pcmChunks = [];
@@ -110,6 +111,45 @@ class TtsService
         }
 
         throw $lastException;
+    }
+
+    /**
+     * Blocos <pre> (config, comandos de terminal, trechos de código) soam horríveis quando
+     * o TTS tenta "ler" como se fosse prosa normal — vira ruído metálico ininteligível.
+     * Troca cada bloco por um aviso curto falado em vez de narrar o conteúdo literal.
+     *
+     * Embeds de imagem do Trix (<figure data-trix-attachment>) também são removidos: o editor
+     * deixa uma legenda com nome de arquivo + tamanho (ex: "2026-03-29_10-38.png 2.88 MB") que
+     * não tem nada a ver com o conteúdo do post — é só metadado de anexo, sem valor narrado, e
+     * na prática já foi observado confundindo a API a ponto dela recusar gerar áudio.
+     */
+    private function stripNonNarratableElements(string $html): string
+    {
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8">'.$html);
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+
+        foreach ($xpath->query('//pre') as $node) {
+            $node->parentNode->replaceChild(
+                $dom->createTextNode("\n\nTrecho de código omitido.\n\n"),
+                $node
+            );
+        }
+
+        foreach ($xpath->query('//figure') as $node) {
+            $node->parentNode->removeChild($node);
+        }
+
+        $body = $dom->getElementsByTagName('body')->item(0);
+        $result = '';
+        foreach ($body?->childNodes ?? [] as $node) {
+            $result .= $dom->saveHTML($node);
+        }
+
+        return $result;
     }
 
     /**

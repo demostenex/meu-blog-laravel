@@ -1,0 +1,63 @@
+{
+  "projectName": "blog",
+  "generatedAt": "2026-08-07T15:57:25.832Z",
+  "score": 77,
+  "filesScanned": 157,
+  "findings": 17,
+  "byRule": {
+    "long_function": 2,
+    "large_service": 1,
+    "duplicate_functions": 6,
+    "similar_functions": 3,
+    "large_file": 5
+  },
+  "bySeverity": {
+    "high": 9,
+    "medium": 8
+  },
+  "byStatus": {
+    "new": 17
+  },
+  "topFiles": [
+    {
+      "file": "resources/views/livewire/posts/edit.blade.php",
+      "findings": 9
+    },
+    {
+      "file": "resources/views/livewire/posts/create.blade.php",
+      "findings": 7
+    },
+    {
+      "file": "resources/views/livewire/posts/show.blade.php",
+      "findings": 2
+    },
+    {
+      "file": "app/Services/AiServiceFactory.php",
+      "findings": 2
+    },
+    {
+      "file": "app/Console/Commands/SyncMediaToR2.php",
+      "findings": 1
+    },
+    {
+      "file": "app/Services/TtsService.php",
+      "findings": 1
+    },
+    {
+      "file": "resources/views/layouts/app.blade.php",
+      "findings": 1
+    },
+    {
+      "file": "resources/views/layouts/blog.blade.php",
+      "findings": 1
+    },
+    {
+      "file": "resources/views/livewire/dashboard.blade.php",
+      "findings": 1
+    },
+    {
+      "file": "resources/views/livewire/settings/ai-providers.blade.php",
+      "findings": 1
+    }
+  ]
+}

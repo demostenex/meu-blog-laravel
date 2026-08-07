@@ -13,6 +13,8 @@ class ResponseCacheTest extends TestCase
 {
     use DatabaseTransactions;
 
+    private const HUMAN_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -71,10 +73,14 @@ class ResponseCacheTest extends TestCase
         $post = Post::factory()->published()->create(['views_count' => 0]);
 
         // 1ª request: MISS — incrementa via middleware TrackPostView
-        $this->get("/blog/{$post->slug}")->assertOk();
+        $this->withHeaders(['User-Agent' => self::HUMAN_USER_AGENT])
+            ->get("/blog/{$post->slug}")
+            ->assertOk();
 
         // 2ª request: HIT — middleware ainda roda antes do cache retornar
-        $this->get("/blog/{$post->slug}")->assertOk();
+        $this->withHeaders(['User-Agent' => self::HUMAN_USER_AGENT])
+            ->get("/blog/{$post->slug}")
+            ->assertOk();
 
         // Flush do Redis para o banco
         $this->artisan('app:flush-views-buffer')->assertSuccessful();
@@ -89,6 +95,37 @@ class ResponseCacheTest extends TestCase
         $post = Post::factory()->published()->create(['user_id' => $user->id, 'views_count' => 0]);
 
         $this->actingAs($user)->get("/blog/{$post->slug}")->assertOk();
+        $this->artisan('app:flush-views-buffer')->assertSuccessful();
+
+        $this->assertEquals(0, $post->fresh()->views_count);
+    }
+
+    #[Test]
+    public function bot_post_view_is_not_counted(): void
+    {
+        $post = Post::factory()->published()->create(['views_count' => 0]);
+
+        $this->withHeaders(['User-Agent' => 'Googlebot/2.1 (+http://www.google.com/bot.html)'])
+            ->get("/blog/{$post->slug}")
+            ->assertOk();
+
+        $this->artisan('app:flush-views-buffer')->assertSuccessful();
+
+        $this->assertEquals(0, $post->fresh()->views_count);
+    }
+
+    #[Test]
+    public function prefetch_post_view_is_not_counted(): void
+    {
+        $post = Post::factory()->published()->create(['views_count' => 0]);
+
+        $this->withHeaders([
+            'User-Agent' => self::HUMAN_USER_AGENT,
+            'Purpose' => 'prefetch',
+        ])
+            ->get("/blog/{$post->slug}")
+            ->assertOk();
+
         $this->artisan('app:flush-views-buffer')->assertSuccessful();
 
         $this->assertEquals(0, $post->fresh()->views_count);

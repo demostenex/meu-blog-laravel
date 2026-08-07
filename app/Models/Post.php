@@ -59,9 +59,9 @@ class Post extends Model
         return $this->hasOne(AiComment::class)->latestOfMany();
     }
 
-    public function documents(): HasMany
+    public function documents(): BelongsToMany
     {
-        return $this->hasMany(Document::class);
+        return $this->belongsToMany(Document::class)->withTimestamps();
     }
 
     public function incrementViews(): void

@@ -1,0 +1,182 @@
+{
+  "projectName": "blog",
+  "generatedAt": "2026-08-07T15:57:39.171Z",
+  "sourceReportGeneratedAt": "2026-08-07T15:57:25.832Z",
+  "mode": "read-only",
+  "purpose": "Radar for deciding what to inspect. It must not modify application code.",
+  "maturity": {
+    "projectName": "blog",
+    "score": 77,
+    "filesScanned": 157,
+    "findings": 17,
+    "highFindings": 9,
+    "level": "intermediate",
+    "label": "controlado com pontos de atenção",
+    "dominantRules": [
+      {
+        "ruleId": "duplicate_functions",
+        "findings": 6
+      },
+      {
+        "ruleId": "large_file",
+        "findings": 5
+      },
+      {
+        "ruleId": "similar_functions",
+        "findings": 3
+      },
+      {
+        "ruleId": "long_function",
+        "findings": 2
+      },
+      {
+        "ruleId": "large_service",
+        "findings": 1
+      }
+    ],
+    "hotspots": [
+      {
+        "file": "resources/views/livewire/posts/edit.blade.php",
+        "findings": 9
+      },
+      {
+        "file": "resources/views/livewire/posts/create.blade.php",
+        "findings": 7
+      },
+      {
+        "file": "resources/views/livewire/posts/show.blade.php",
+        "findings": 2
+      },
+      {
+        "file": "app/Services/AiServiceFactory.php",
+        "findings": 2
+      },
+      {
+        "file": "app/Console/Commands/SyncMediaToR2.php",
+        "findings": 1
+      },
+      {
+        "file": "app/Services/TtsService.php",
+        "findings": 1
+      },
+      {
+        "file": "resources/views/layouts/app.blade.php",
+        "findings": 1
+      },
+      {
+        "file": "resources/views/layouts/blog.blade.php",
+        "findings": 1
+      },
+      {
+        "file": "resources/views/livewire/dashboard.blade.php",
+        "findings": 1
+      },
+      {
+        "file": "resources/views/livewire/settings/ai-providers.blade.php",
+        "findings": 1
+      }
+    ],
+    "summary": "blog: maturidade controlado com pontos de atenção, score 77/100, 17 achado(s) em 157 arquivo(s)."
+  },
+  "trend": {
+    "available": false,
+    "summary": "No previous history version available for comparison."
+  },
+  "priorities": [
+    {
+      "file": "resources/views/livewire/posts/edit.blade.php",
+      "findings": 9,
+      "highFindings": 6,
+      "rules": [
+        "duplicate_functions",
+        "similar_functions",
+        "large_file"
+      ],
+      "reason": "file size makes review and AI-assisted edits harder to keep scoped."
+    },
+    {
+      "file": "resources/views/livewire/posts/create.blade.php",
+      "findings": 7,
+      "highFindings": 6,
+      "rules": [
+        "duplicate_functions",
+        "large_file"
+      ],
+      "reason": "file size makes review and AI-assisted edits harder to keep scoped."
+    },
+    {
+      "file": "resources/views/livewire/posts/show.blade.php",
+      "findings": 2,
+      "highFindings": 1,
+      "rules": [
+        "long_function",
+        "large_file"
+      ],
+      "reason": "file size makes review and AI-assisted edits harder to keep scoped."
+    },
+    {
+      "file": "app/Console/Commands/SyncMediaToR2.php",
+      "findings": 1,
+      "highFindings": 1,
+      "rules": [
+        "long_function"
+      ],
+      "reason": "concentrates guardrail findings and should be inspected before nearby changes grow."
+    },
+    {
+      "file": "app/Services/TtsService.php",
+      "findings": 1,
+      "highFindings": 1,
+      "rules": [
+        "large_service"
+      ],
+      "reason": "service has enough responsibility to become an ownership and regression hotspot."
+    },
+    {
+      "file": "app/Services/AiServiceFactory.php",
+      "findings": 2,
+      "highFindings": 0,
+      "rules": [
+        "similar_functions"
+      ],
+      "reason": "concentrates guardrail findings and should be inspected before nearby changes grow."
+    },
+    {
+      "file": "resources/views/layouts/app.blade.php",
+      "findings": 1,
+      "highFindings": 0,
+      "rules": [
+        "similar_functions"
+      ],
+      "reason": "concentrates guardrail findings and should be inspected before nearby changes grow."
+    },
+    {
+      "file": "resources/views/layouts/blog.blade.php",
+      "findings": 1,
+      "highFindings": 0,
+      "rules": [
+        "similar_functions"
+      ],
+      "reason": "concentrates guardrail findings and should be inspected before nearby changes grow."
+    },
+    {
+      "file": "resources/views/livewire/dashboard.blade.php",
+      "findings": 1,
+      "highFindings": 0,
+      "rules": [
+        "large_file"
+      ],
+      "reason": "file size makes review and AI-assisted edits harder to keep scoped."
+    },
+    {
+      "file": "resources/views/livewire/settings/ai-providers.blade.php",
+      "findings": 1,
+      "highFindings": 0,
+      "rules": [
+        "large_file"
+      ],
+      "reason": "file size makes review and AI-assisted edits harder to keep scoped."
+    }
+  ],
+  "aiPrompt": "You are analyzing a guardrails report for code health.\nDo not edit code. Do not produce patches. Do not propose automatic fixes.\nOnly explain what humans should inspect, why it matters, and what questions they should ask before changing code.\n\nProject: blog\nScore: 77/100\nFiles scanned: 157\nFindings: 17\nMaturity: controlado com pontos de atenção\nTrend: No previous history version available for comparison.\n\nTop inspection priorities:\n- resources/views/livewire/posts/edit.blade.php: 9 finding(s), rules=duplicate_functions, similar_functions, large_file\n- resources/views/livewire/posts/create.blade.php: 7 finding(s), rules=duplicate_functions, large_file\n- resources/views/livewire/posts/show.blade.php: 2 finding(s), rules=long_function, large_file\n- app/Console/Commands/SyncMediaToR2.php: 1 finding(s), rules=long_function\n- app/Services/TtsService.php: 1 finding(s), rules=large_service\n- app/Services/AiServiceFactory.php: 2 finding(s), rules=similar_functions\n- resources/views/layouts/app.blade.php: 1 finding(s), rules=similar_functions\n- resources/views/layouts/blog.blade.php: 1 finding(s), rules=similar_functions"
+}

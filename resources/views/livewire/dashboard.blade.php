@@ -36,11 +36,7 @@ new class extends Component {
     public function mount(): void
     {
         $this->totalPosts = Post::where('user_id', auth()->id())->count();
-        $this->totalViews = Post::where('user_id', auth()->id())->sum('views_count');
-        $this->topPosts   = Post::where('user_id', auth()->id())
-            ->orderByDesc('views_count')
-            ->limit(5)
-            ->get(['id', 'title', 'slug', 'views_count', 'created_at']);
+        $this->loadHumanPostViews();
 
         $since7  = now()->subDays(7);
         $since30 = now()->subDays(30);
@@ -118,6 +114,38 @@ new class extends Component {
             ->toArray();
     }
 
+    private function loadHumanPostViews(): void
+    {
+        $posts = Post::where('user_id', auth()->id())
+            ->get(['id', 'title', 'slug', 'created_at']);
+
+        $paths = $posts
+            ->pluck('slug')
+            ->map(fn (string $slug) => "blog/{$slug}");
+
+        $viewsByPath = $paths->isEmpty()
+            ? collect()
+            : PageView::where('is_bot', false)
+                ->whereIn('path', $paths)
+                ->selectRaw('path, count(*) as total')
+                ->groupBy('path')
+                ->pluck('total', 'path');
+
+        $postsWithViews = $posts
+            ->map(function (Post $post) use ($viewsByPath) {
+                $post->setAttribute('human_views_count', (int) $viewsByPath->get("blog/{$post->slug}", 0));
+
+                return $post;
+            });
+
+        $this->totalViews = $postsWithViews->sum(fn (Post $post) => $post->human_views_count);
+
+        $this->topPosts = $postsWithViews
+            ->sortByDesc(fn (Post $post) => $post->human_views_count)
+            ->take(5)
+            ->values();
+    }
+
     public function syncToR2(): void
     {
         $this->syncing    = true;
@@ -160,7 +188,7 @@ new class extends Component {
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-2xl shrink-0">👁️</div>
                     <div>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total de Visualizações</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Total de Visualizações Humanas</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($totalViews, 0, ',', '.') }}</p>
                     </div>
                 </div>
@@ -331,7 +359,7 @@ new class extends Component {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                 </svg>
-                                {{ number_format($post->views_count, 0, ',', '.') }}
+                                {{ number_format($post->human_views_count, 0, ',', '.') }}
                             </div>
                         </div>
                     @empty
