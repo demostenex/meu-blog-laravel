@@ -1,36 +1,68 @@
 <?php
 
-use Livewire\Volt\Component;
+use App\Models\AnalyticsSession;
 use App\Models\PageView;
 use App\Models\Post;
 use Illuminate\Support\Facades\Artisan;
+use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public int $totalPosts = 0;
+
     public int $totalViews = 0;
+
     public $topPosts;
 
     // Totais 7d
-    public int $views7d      = 0;
+    public int $views7d = 0;
+
     public int $humanViews7d = 0;
-    public int $botViews7d   = 0;
-    public int $unique7d     = 0;
-    public int $views30d     = 0;
+
+    public int $botViews7d = 0;
+
+    public int $unique7d = 0;
+
+    public int $views30d = 0;
 
     // Listas 7d
-    public array $topPages     = [];
+    public array $topPages = [];
+
     public array $topReferrers = [];
-    public array $devices      = [];
+
+    public array $devices = [];
+
+    // Sessões e aquisição 7d
+    public int $visitors7d = 0;
+
+    public int $sessions7d = 0;
+
+    public int $sessionPageViews7d = 0;
+
+    public float $pagesPerSession7d = 0;
+
+    public array $sessionSources = [];
+
+    public array $landingPages = [];
+
+    public array $sourceLandings = [];
+
+    public array $internalFlows = [];
 
     // Engajamento 30d
-    public int   $avgTimeOnPage  = 0;
-    public int   $avgScrollDepth = 0;
-    public array $topByTime      = [];
-    public array $topByFullRead  = [];
+    public int $avgTimeOnPage = 0;
+
+    public int $avgScrollDepth = 0;
+
+    public array $topByTime = [];
+
+    public array $topByFullRead = [];
 
     // R2 sync
-    public bool   $syncing    = false;
-    public string $syncLog    = '';
+    public bool $syncing = false;
+
+    public string $syncLog = '';
+
     public string $syncStatus = '';
 
     public function mount(): void
@@ -38,13 +70,13 @@ new class extends Component {
         $this->totalPosts = Post::where('user_id', auth()->id())->count();
         $this->loadHumanPostViews();
 
-        $since7  = now()->subDays(7);
+        $since7 = now()->subDays(7);
         $since30 = now()->subDays(30);
 
-        $this->views7d      = PageView::where('created_at', '>=', $since7)->count();
+        $this->views7d = PageView::where('created_at', '>=', $since7)->count();
         $this->humanViews7d = PageView::where('created_at', '>=', $since7)->where('is_bot', false)->count();
-        $this->botViews7d   = $this->views7d - $this->humanViews7d;
-        $this->views30d     = PageView::where('created_at', '>=', $since30)->count();
+        $this->botViews7d = $this->views7d - $this->humanViews7d;
+        $this->views30d = PageView::where('created_at', '>=', $since30)->count();
 
         $this->unique7d = PageView::where('created_at', '>=', $since7)
             ->where('is_bot', false)
@@ -77,6 +109,8 @@ new class extends Component {
             ->orderByDesc('total')
             ->pluck('total', 'device')
             ->toArray();
+
+        $this->loadSessionAnalytics($since7);
 
         $this->avgTimeOnPage = (int) round(
             PageView::where('created_at', '>=', $since30)
@@ -114,6 +148,83 @@ new class extends Component {
             ->toArray();
     }
 
+    private function loadSessionAnalytics($since): void
+    {
+        $sessions = AnalyticsSession::query()
+            ->where('started_at', '>=', $since)
+            ->where('is_bot', false);
+
+        $this->sessions7d = (clone $sessions)->count();
+        $this->visitors7d = (clone $sessions)->distinct()->count('visitor_id');
+        $this->sessionPageViews7d = PageView::query()
+            ->where('page_views.created_at', '>=', $since)
+            ->where('page_views.is_bot', false)
+            ->whereNotNull('session_id')
+            ->count();
+        $this->pagesPerSession7d = $this->sessions7d > 0
+            ? round($this->sessionPageViews7d / $this->sessions7d, 2)
+            : 0;
+
+        $this->sessionSources = (clone $sessions)
+            ->selectRaw('source_key, count(*) as total')
+            ->groupBy('source_key')
+            ->orderByDesc('total')
+            ->limit(8)
+            ->pluck('total', 'source_key')
+            ->toArray();
+
+        $this->landingPages = (clone $sessions)
+            ->selectRaw('landing_path, count(*) as total')
+            ->groupBy('landing_path')
+            ->orderByDesc('total')
+            ->limit(8)
+            ->pluck('total', 'landing_path')
+            ->toArray();
+
+        $this->sourceLandings = (clone $sessions)
+            ->selectRaw('source_key, landing_path, count(*) as total')
+            ->groupBy('source_key', 'landing_path')
+            ->orderByDesc('total')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row) => [
+                'source' => $row->source_key,
+                'path' => $row->landing_path,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+
+        $transitions = [];
+        PageView::query()
+            ->where('created_at', '>=', $since)
+            ->where('is_bot', false)
+            ->whereNotNull('session_id')
+            ->orderBy('session_id')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get(['session_id', 'path'])
+            ->groupBy('session_id')
+            ->each(function ($views) use (&$transitions): void {
+                $views->pluck('path')->sliding(2)->each(function ($pair) use (&$transitions): void {
+                    [$from, $to] = $pair->values()->all();
+                    if ($from !== $to) {
+                        $key = $from."\n".$to;
+                        $transitions[$key] = ($transitions[$key] ?? 0) + 1;
+                    }
+                });
+            });
+
+        arsort($transitions);
+        $this->internalFlows = collect(array_slice($transitions, 0, 8, true))
+            ->map(fn (int $total, string $key) => [
+                'from' => explode("\n", $key, 2)[0],
+                'to' => explode("\n", $key, 2)[1],
+                'total' => $total,
+            ])
+            ->values()
+            ->all();
+    }
+
     private function loadHumanPostViews(): void
     {
         $posts = Post::where('user_id', auth()->id())
@@ -148,16 +259,16 @@ new class extends Component {
 
     public function syncToR2(): void
     {
-        $this->syncing    = true;
-        $this->syncLog    = '';
+        $this->syncing = true;
+        $this->syncLog = '';
         $this->syncStatus = '';
 
         try {
             Artisan::call('media:sync-to-r2', ['--force' => true]);
-            $this->syncLog    = Artisan::output();
+            $this->syncLog = Artisan::output();
             $this->syncStatus = 'success';
-        } catch (\Throwable $e) {
-            $this->syncLog    = $e->getMessage();
+        } catch (Throwable $e) {
+            $this->syncLog = $e->getMessage();
             $this->syncStatus = 'error';
         }
 
@@ -192,6 +303,83 @@ new class extends Component {
                         <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($totalViews, 0, ',', '.') }}</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Sessões e aquisição -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">🧭 Sessões humanas — últimos 7 dias</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Dados disponíveis para acessos registrados após a implantação das sessões.</p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-100 dark:divide-gray-700 border-b border-gray-100 dark:border-gray-700">
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ number_format($visitors7d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Visitantes</p>
+                    </div>
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($sessions7d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sessões</p>
+                    </div>
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ number_format($sessionPageViews7d, 0, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pageviews</p>
+                    </div>
+                    <div class="px-6 py-5 text-center">
+                        <p class="text-3xl font-bold text-teal-600 dark:text-teal-400">{{ number_format($pagesPerSession7d, 2, ',', '.') }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Páginas/sessão</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100 dark:divide-gray-700">
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Origem das sessões</p>
+                        @forelse($sessionSources as $source => $count)
+                            <div class="flex justify-between items-center py-1.5">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">{{ $source === 'direct' ? 'Direto / desconhecido' : ucfirst($source) }}</span>
+                                <span class="text-sm font-semibold text-purple-600 dark:text-purple-400">{{ $count }}</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 italic">As novas sessões aparecerão aqui.</p>
+                        @endforelse
+                    </div>
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Landing pages</p>
+                        @forelse($landingPages as $path => $count)
+                            <div class="flex justify-between items-center gap-2 py-1.5">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono">/{{ ltrim($path, '/') }}</span>
+                                <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $count }}</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 italic">As novas sessões aparecerão aqui.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                @if(count($sourceLandings) > 0 || count($internalFlows) > 0)
+                <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Origem × landing page</p>
+                        @foreach($sourceLandings as $row)
+                            <div class="flex justify-between items-center gap-2 py-1.5">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $row['source'] === 'direct' ? 'Direto' : ucfirst($row['source']) }} → <span class="font-mono">/{{ ltrim($row['path'], '/') }}</span></span>
+                                <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ $row['total'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="px-6 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">Fluxo interno</p>
+                        @forelse($internalFlows as $row)
+                            <div class="flex justify-between items-center gap-2 py-1.5">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono">/{{ ltrim($row['from'], '/') }} → /{{ ltrim($row['to'], '/') }}</span>
+                                <span class="text-sm font-semibold text-teal-600 dark:text-teal-400">{{ $row['total'] }}</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 italic">São necessários dois pageviews na mesma sessão.</p>
+                        @endforelse
+                    </div>
+                </div>
+                @endif
             </div>
 
             <!-- Analytics Soberano -->

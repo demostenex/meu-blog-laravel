@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Jobs\RecordPageViewJob;
+use App\Services\Analytics\SessionTracker;
 use App\Support\TrafficClassifier;
 use Closure;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class TrackPageView
 {
+    public function __construct(private readonly SessionTracker $sessions) {}
+
     private const IGNORED_PATHS = [
         'login', 'logout', 'register', 'password',
         'wp-admin', 'wp-login', 'xmlrpc', 'wp-includes',
@@ -25,16 +28,32 @@ class TrackPageView
         $response = $next($request);
 
         if ($this->shouldTrack($request) && $response->getStatusCode() === 200) {
+            if (method_exists($response, 'getContent') && method_exists($response, 'setContent')) {
+                $response->setContent(str_replace(
+                    '__ANALYTICS_VIEW_TOKEN__',
+                    $viewToken,
+                    (string) $response->getContent(),
+                ));
+            }
+
             $ua = $request->userAgent() ?? '';
+            $isBot = TrafficClassifier::isBot($ua);
+            $device = $this->detectDevice($ua);
+            $ipHash = hash('sha256', $request->ip().config('app.key'));
+            [$pageReferrer, $pageReferrerDomain] = $this->sessions->referrer($request);
+            $sessionId = $isBot ? null : $this->sessions->resolve($request, $device, $ipHash, $ua)->id;
 
             dispatch(new RecordPageViewJob(
-                path:      $request->path(),
-                referrer:  $this->extractReferrer($request),
-                device:    $this->detectDevice($ua),
-                ipHash:    hash('sha256', $request->ip() . config('app.key')),
+                sessionId: $sessionId,
+                path: $request->path(),
+                referrer: $this->legacyExternalReferrer($request),
+                pageReferrer: $pageReferrer,
+                pageReferrerDomain: $pageReferrerDomain,
+                device: $device,
+                ipHash: $ipHash,
                 userAgent: $ua ?: null,
                 viewToken: $viewToken,
-                isBot:     TrafficClassifier::isBot($ua),
+                isBot: $isBot,
             ));
         }
 
@@ -65,7 +84,7 @@ class TrackPageView
         return true;
     }
 
-    private function extractReferrer(Request $request): ?string
+    private function legacyExternalReferrer(Request $request): ?string
     {
         $referrer = $request->headers->get('referer');
 

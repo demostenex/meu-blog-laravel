@@ -603,7 +603,7 @@ new #[Layout('layouts.blog')] class extends Component
             navigator.sendBeacon(
                 '/analytics/engage',
                 new Blob([JSON.stringify({
-                    path:         '{{ request()->path() }}',
+                    view_token:   '__ANALYTICS_VIEW_TOKEN__',
                     scroll_depth: maxScroll,
                     time_on_page: timeOnPage,
                     language:     (navigator.language || '').slice(0, 10),

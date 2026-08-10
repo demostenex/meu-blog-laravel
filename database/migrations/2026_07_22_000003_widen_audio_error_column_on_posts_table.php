@@ -1,17 +1,22 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE posts ALTER COLUMN audio_error TYPE TEXT');
+        Schema::table('posts', function (Blueprint $table) {
+            $table->text('audio_error')->nullable()->change();
+        });
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE posts ALTER COLUMN audio_error TYPE VARCHAR(255)');
+        Schema::table('posts', function (Blueprint $table) {
+            $table->string('audio_error')->nullable()->change();
+        });
     }
 };
