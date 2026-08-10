@@ -249,6 +249,29 @@ class TrackPageViewTest extends TestCase
     }
 
     #[Test]
+    public function dominio_proprio_com_variacao_www_e_classificado_como_direto(): void
+    {
+        Queue::fake();
+
+        $this->withHeaders([
+            'Host' => 'umproblemadecadavez.com.br',
+            'X-Forwarded-Host' => 'umproblemadecadavez.com.br',
+            'User-Agent' => 'Mozilla/5.0 Chrome/120.0 Windows',
+            'Referer' => 'https://www.umproblemadecadavez.com.br/blog/calvino',
+        ])->get('/analytics-test-page');
+
+        $this->assertDatabaseHas('analytics_sessions', [
+            'source_key' => 'direct',
+            'initial_referrer' => '/blog/calvino',
+            'initial_referrer_domain' => 'www.umproblemadecadavez.com.br',
+        ]);
+
+        Queue::assertPushed(RecordPageViewJob::class, fn ($job) => $job->referrer === null
+            && $job->pageReferrer === '/blog/calvino'
+        );
+    }
+
+    #[Test]
     public function inatividade_de_trinta_minutos_cria_nova_sessao_para_o_mesmo_visitante(): void
     {
         Queue::fake();
