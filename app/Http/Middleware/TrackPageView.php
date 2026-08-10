@@ -46,7 +46,7 @@ class TrackPageView
             dispatch(new RecordPageViewJob(
                 sessionId: $sessionId,
                 path: $request->path(),
-                referrer: $this->legacyExternalReferrer($request),
+                referrer: str_starts_with($pageReferrer ?? '', '/') ? null : $pageReferrerDomain,
                 pageReferrer: $pageReferrer,
                 pageReferrerDomain: $pageReferrerDomain,
                 device: $device,
@@ -82,23 +82,6 @@ class TrackPageView
         }
 
         return true;
-    }
-
-    private function legacyExternalReferrer(Request $request): ?string
-    {
-        $referrer = $request->headers->get('referer');
-
-        if (! $referrer) {
-            return null;
-        }
-
-        $host = parse_url($referrer, PHP_URL_HOST);
-
-        if ($host && str_contains($host, parse_url(config('app.url'), PHP_URL_HOST) ?? '')) {
-            return null;
-        }
-
-        return $host ?: null;
     }
 
     private function detectDevice(string $ua): string

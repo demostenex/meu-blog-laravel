@@ -77,12 +77,16 @@ class SessionTracker
             return [null, null];
         }
 
-        $appHost = strtolower((string) parse_url(config('app.url'), PHP_URL_HOST));
         $path = '/'.ltrim((string) parse_url($value, PHP_URL_PATH), '/');
 
-        return $host === $appHost
+        return $this->normalizedHost($host) === $this->normalizedHost($request->getHost())
             ? [substr($path, 0, 1000), $host]
             : [substr(parse_url($value, PHP_URL_SCHEME).'://'.$host.$path, 0, 1000), $host];
+    }
+
+    private function normalizedHost(string $host): string
+    {
+        return preg_replace('/^www\./i', '', strtolower(trim($host, '.'))) ?? '';
     }
 
     private function landingUrl(Request $request): string
