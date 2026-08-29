@@ -313,7 +313,7 @@ new class extends Component {
                     <div wire:ignore>
                         <x-input-label for="content" :value="__('Conteúdo')" class="mb-1" />
                         <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                            Arraste/cole imagens ou vídeos no editor. Vídeos serão convertidos automaticamente para player no artigo. Use `> ` para citação e `**texto**` para negrito.
+                            Arraste/cole imagens ou vídeos no editor. Vídeos serão convertidos automaticamente para player no artigo. Use `# ` para título, `## ` para subtítulo, `> ` para citação, `---` para linha horizontal e `**texto**` para negrito — funciona digitando ou colando markdown pronto.
                         </p>
                         
                         <input id="trix_content" type="hidden" name="content" wire:model="content">
