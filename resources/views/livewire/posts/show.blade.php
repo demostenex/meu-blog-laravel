@@ -430,20 +430,9 @@ new #[Layout('layouts.blog')] class extends Component
 
             tocList.innerHTML = '';
             
-            // Busca títulos padrões
+            // Só heading de verdade (`#` no editor) entra no sumário — negrito
+            // solto (`##`, ou qualquer **negrito**) é só estilo, não título.
             let headings = Array.from(content.querySelectorAll('h1, h2, h3'));
-            
-            // Busca textos apenas em negrito que atuam como títulos (comportamento comum de colar texto no Trix)
-            const strongs = Array.from(content.querySelectorAll('strong'));
-            strongs.forEach(strong => {
-                const parent = strong.parentElement;
-                // Se o texto do <strong/b> for praticamente todo o texto da <div> pai, é um título de seção!
-                if (parent && (parent.tagName === 'DIV' || parent.tagName === 'P') && strong.textContent.trim().length > 10) {
-                    if (parent.textContent.trim() === strong.textContent.trim()) {
-                        headings.push(strong);
-                    }
-                }
-            });
 
             // Ordena todos os títulos encontrados pela ordem que aparecem no artigo
             headings.sort((a, b) => {

@@ -657,7 +657,7 @@ new class extends Component
                             <span x-show="lang === 'en'" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">(EN)</span>
                         </div>
                         <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                            Arraste/cole imagens ou vídeos no editor. Vídeos serão convertidos automaticamente para player no artigo. Use `> ` para citação e `**texto**` para negrito.
+                            Arraste/cole imagens ou vídeos no editor. Vídeos serão convertidos automaticamente para player no artigo. Use `# ` para título, `## ` para subtítulo, `> ` para citação, `---` para linha horizontal e `**texto**` para negrito — funciona digitando ou colando markdown pronto.
                         </p>
 
                         <input id="trix_content" type="hidden" name="content" wire:model="content" value="{{ $content }}">
