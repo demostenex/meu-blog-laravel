@@ -219,6 +219,70 @@ document.addEventListener('trix-change', (event) => {
 // O formato do `<figure data-trix-attachment>` é o mesmo que o Trix gera
 // sozinho pra content attachments — confirmado por round-trip via loadHTML.
 const HORIZONTAL_RULE_HTML = '<figure data-trix-attachment=\'{"content":"<hr>","contentType":"application/vnd.trix.horizontal-rule"}\' data-trix-content-type="application/vnd.trix.horizontal-rule"><hr></figure>';
+const TABLE_CONTENT_TYPE = 'application/vnd.trix.table';
+
+// Tabela não existe no modelo de dados do Trix (sem attribute pra ativar, ao
+// contrário de heading/quote/lista) — por isso ela entra como content
+// attachment opaco, igual o `<hr>`. Depois de colada não dá pra editar célula
+// por célula dentro do Trix; pra mudar é apagar e colar de novo.
+function wrapAsAttachment(html, contentType) {
+    const attachmentJson = JSON.stringify({ content: html, contentType }).replaceAll("'", '&#39;');
+    return `<figure data-trix-attachment='${attachmentJson}' data-trix-content-type="${contentType}">${html}</figure>`;
+}
+
+// Divide uma linha `| a | b |` em células, tolerando pipes de abertura/fechamento opcionais.
+function splitTableRow(line) {
+    let trimmed = line.trim();
+
+    if (trimmed.startsWith('|')) {
+        trimmed = trimmed.slice(1);
+    }
+
+    if (trimmed.endsWith('|')) {
+        trimmed = trimmed.slice(0, -1);
+    }
+
+    return trimmed.split('|').map((cell) => cell.trim());
+}
+
+function isTableSeparatorRow(line) {
+    const cells = splitTableRow(line);
+
+    return cells.length > 0 && cells.every((cell) => /^:?-+:?$/.test(cell));
+}
+
+function cellAlignment(cell) {
+    const left = cell.startsWith(':');
+    const right = cell.endsWith(':');
+
+    if (left && right) {
+        return 'center';
+    }
+
+    if (right) {
+        return 'right';
+    }
+
+    if (left) {
+        return 'left';
+    }
+
+    return null;
+}
+
+function buildTableHtml(headerCells, alignments, bodyRows) {
+    const styleFor = (index) => {
+        const align = alignments[index];
+        return align ? ` style="text-align: ${align}"` : '';
+    };
+
+    const headHtml = `<tr>${headerCells.map((cell, index) => `<th${styleFor(index)}>${convertInlineMarkdown(cell)}</th>`).join('')}</tr>`;
+    const bodyHtml = bodyRows
+        .map((row) => `<tr>${row.map((cell, index) => `<td${styleFor(index)}>${convertInlineMarkdown(cell)}</td>`).join('')}</tr>`)
+        .join('');
+
+    return `<table><thead>${headHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+}
 
 function markdownTextToTrixHtml(text) {
     const lines = text.replace(/\r\n/g, '\n').split('\n');
@@ -254,7 +318,8 @@ function markdownTextToTrixHtml(text) {
         flushList();
     }
 
-    for (const rawLine of lines) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const rawLine = lines[lineIndex];
         const line = rawLine.trimEnd();
 
         if (codeBuffer !== null) {
@@ -280,6 +345,24 @@ function markdownTextToTrixHtml(text) {
 
         if (line === '') {
             flushParagraphBoundaries();
+            continue;
+        }
+
+        if (line.includes('|') && lineIndex + 1 < lines.length && isTableSeparatorRow(lines[lineIndex + 1])) {
+            flushParagraphBoundaries();
+
+            const headerCells = splitTableRow(line);
+            const alignments = splitTableRow(lines[lineIndex + 1]).map(cellAlignment);
+            const bodyRows = [];
+            lineIndex += 2;
+
+            while (lineIndex < lines.length && lines[lineIndex].trim() !== '' && lines[lineIndex].includes('|')) {
+                bodyRows.push(splitTableRow(lines[lineIndex]));
+                lineIndex += 1;
+            }
+
+            lineIndex -= 1;
+            blocks.push(wrapAsAttachment(buildTableHtml(headerCells, alignments, bodyRows), TABLE_CONTENT_TYPE));
             continue;
         }
 
