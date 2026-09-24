@@ -37,11 +37,24 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 
-// Converte `**negrito**` dentro de um texto já escapado (funciona também
-// dentro de citações — o marcador de negrito não é exclusivo de parágrafo).
-function convertInlineBold(rawText) {
-    return escapeHtml(rawText).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+// Converte Markdown inline depois de escapar o texto. Os placeholders impedem
+// que negrito/link sejam interpretados dentro de um trecho de código.
+function convertInlineMarkdown(rawText) {
+    const codeSpans = [];
+    const escaped = escapeHtml(rawText).replace(/`([^`\n]+)`/g, (_match, code) => {
+        const placeholder = `\u0000CODE${codeSpans.length}\u0000`;
+        codeSpans.push(`<code>${code}</code>`);
+        return placeholder;
+    });
+
+    let converted = escaped
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
+
+    return converted.replace(/\u0000CODE(\d+)\u0000/g, (_match, index) => codeSpans[index]);
 }
+
+const convertInlineBold = convertInlineMarkdown;
 
 function applyQuoteShortcut(editor, context) {
     if (context.lineBeforeCursor !== '> ') {
@@ -78,6 +91,31 @@ function applyBoldShortcut(editor, context) {
     deleteCharactersBackward(editor, context.lineBeforeCursor.length - openingStart);
     editor.insertHTML(`<strong>${escapeHtml(content)}</strong>`);
     editor.deactivateAttribute('bold');
+
+    return true;
+}
+
+function applyInlineCodeShortcut(editor, context) {
+    if (!context.lineBeforeCursor.endsWith('`') || context.lineBeforeCursor.endsWith('``')) {
+        return false;
+    }
+
+    const closingStart = context.lineBeforeCursor.length - 1;
+    const openingStart = context.lineBeforeCursor.slice(0, closingStart).lastIndexOf('`');
+
+    if (openingStart === -1) {
+        return false;
+    }
+
+    const content = context.lineBeforeCursor.slice(openingStart + 1, closingStart);
+
+    if (!content) {
+        return false;
+    }
+
+    editor.recordUndoEntry('Markdown inline code');
+    deleteCharactersBackward(editor, context.lineBeforeCursor.length - openingStart);
+    editor.insertHTML(`<code>${escapeHtml(content)}</code>`);
 
     return true;
 }
@@ -163,6 +201,10 @@ document.addEventListener('trix-change', (event) => {
             return;
         }
 
+        if (applyInlineCodeShortcut(editor, context)) {
+            return;
+        }
+
         applyBoldShortcut(editor, context);
     } finally {
         processingEditors.delete(editorElement);
@@ -170,8 +212,8 @@ document.addEventListener('trix-change', (event) => {
 });
 
 // --- Colar markdown pronto -------------------------------------------------
-// Quando o conteúdo colado é texto puro, convertemos `#`, `##`, `>`, `---` e
-// `**negrito**` linha a linha e montamos UMA string HTML com todos os blocos,
+// Quando o conteúdo colado é texto puro, convertemos Markdown linha a linha e
+// montamos UMA string HTML com todos os blocos,
 // inserida de uma vez só via editor.insertHTML — inserir bloco a bloco em
 // chamadas separadas vaza atributos (heading/bold) pro bloco seguinte.
 // O formato do `<figure data-trix-attachment>` é o mesmo que o Trix gera
@@ -182,6 +224,10 @@ function markdownTextToTrixHtml(text) {
     const lines = text.replace(/\r\n/g, '\n').split('\n');
     const blocks = [];
     let quoteBuffer = [];
+    let listBuffer = [];
+    let listType = null;
+    let codeBuffer = null;
+    let codeLanguage = '';
 
     function flushQuote() {
         if (quoteBuffer.length === 0) {
@@ -193,45 +239,102 @@ function markdownTextToTrixHtml(text) {
         quoteBuffer = [];
     }
 
+    function flushList() {
+        if (listBuffer.length === 0) {
+            return;
+        }
+
+        blocks.push(`<${listType}>${listBuffer.map((item) => `<li>${convertInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
+        listBuffer = [];
+        listType = null;
+    }
+
+    function flushParagraphBoundaries() {
+        flushQuote();
+        flushList();
+    }
+
     for (const rawLine of lines) {
-        const line = rawLine.trim();
+        const line = rawLine.trimEnd();
+
+        if (codeBuffer !== null) {
+            if (/^\s*```\s*$/.test(line)) {
+                const languageClass = codeLanguage ? ` class="language-${escapeHtml(codeLanguage)}"` : '';
+                blocks.push(`<pre><code${languageClass}>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
+                codeBuffer = null;
+                codeLanguage = '';
+            } else {
+                codeBuffer.push(rawLine);
+            }
+            continue;
+        }
+
+        const fenceMatch = line.match(/^\s*```\s*([\w+-]*)\s*$/);
+
+        if (fenceMatch) {
+            flushParagraphBoundaries();
+            codeBuffer = [];
+            codeLanguage = fenceMatch[1];
+            continue;
+        }
 
         if (line === '') {
-            flushQuote();
+            flushParagraphBoundaries();
             continue;
         }
 
         if (/^-{3,}$/.test(line)) {
-            flushQuote();
+            flushParagraphBoundaries();
             blocks.push(HORIZONTAL_RULE_HTML);
             continue;
         }
 
         const headingMatch = line.match(/^#\s+(.+)$/);
         if (headingMatch) {
-            flushQuote();
+            flushParagraphBoundaries();
             blocks.push(`<h1>${escapeHtml(headingMatch[1].trim())}</h1>`);
             continue;
         }
 
         const subtitleMatch = line.match(/^##\s+(.+)$/);
         if (subtitleMatch) {
-            flushQuote();
-            blocks.push(`<div><strong>${escapeHtml(subtitleMatch[1].trim())}</strong></div>`);
+            flushParagraphBoundaries();
+            blocks.push(`<div><strong>${convertInlineMarkdown(subtitleMatch[1].trim())}</strong></div>`);
             continue;
         }
 
         const quoteMatch = line.match(/^>\s?(.*)$/);
         if (quoteMatch) {
+            flushList();
             quoteBuffer.push(quoteMatch[1]);
             continue;
         }
 
-        flushQuote();
-        blocks.push(`<div>${convertInlineBold(line)}</div>`);
+        const unorderedMatch = line.match(/^\s*[-*+]\s+(.+)$/);
+        const orderedMatch = line.match(/^\s*\d+[.)]\s+(.+)$/);
+        const nextListType = unorderedMatch ? 'ul' : orderedMatch ? 'ol' : null;
+
+        if (nextListType) {
+            flushQuote();
+            if (listType && listType !== nextListType) {
+                flushList();
+            }
+            listType = nextListType;
+            listBuffer.push((unorderedMatch || orderedMatch)[1]);
+            continue;
+        }
+
+        flushParagraphBoundaries();
+        blocks.push(`<div>${convertInlineMarkdown(line.trim())}</div>`);
+    }
+
+    if (codeBuffer !== null) {
+        const languageClass = codeLanguage ? ` class="language-${escapeHtml(codeLanguage)}"` : '';
+        blocks.push(`<pre><code${languageClass}>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
     }
 
     flushQuote();
+    flushList();
 
     return blocks.join('');
 }
