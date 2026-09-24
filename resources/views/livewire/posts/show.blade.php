@@ -634,6 +634,12 @@ new #[Layout('layouts.blog')] class extends Component
         .trix-content .article-video { margin: 2rem 0; }
         .trix-content .article-video video { width: 100%; height: auto; border-radius: 1rem; background: #000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .trix-content a { color: #3b82f6; text-decoration: underline; text-underline-offset: 4px; font-weight: 500; }
+        .trix-content figure[data-trix-content-type="application/vnd.trix.table"] { margin: 2rem 0; overflow-x: auto; }
+        .trix-content table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+        .trix-content th, .trix-content td { padding: 0.6rem 1rem; border: 1px solid #e5e7eb; text-align: left; }
+        .trix-content thead th { background: #f9fafb; font-weight: 600; }
+        .dark .trix-content th, .dark .trix-content td { border-color: #374151; }
+        .dark .trix-content thead th { background: #1f2937; }
 
         /* Estilo para Blocos de Código (Highlight.js) */
         .trix-content pre {
