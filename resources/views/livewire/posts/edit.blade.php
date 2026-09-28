@@ -130,7 +130,7 @@ new class extends Component
         return [
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'cover_image' => 'nullable|image|max:2048',
+            'cover_image' => 'nullable|image|max:51200',
             'trixImage' => 'nullable|image|max:5120',
             'trixVideo' => 'nullable|file|mimetypes:video/mp4,video/webm,video/ogg,video/quicktime|max:102400',
             'category_id' => 'nullable|exists:categories,id',
