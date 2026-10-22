@@ -39,6 +39,7 @@ new class extends Component
                     <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.index')" wire:navigate>
                         {{ __('Categorias') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('settings.analytics')" :active="request()->routeIs('settings.analytics')" wire:navigate>Analytics</x-nav-link>
                     <x-nav-link :href="route('documents.index')" :active="request()->routeIs('documents.index')" wire:navigate>
                         {{ __('Documentos') }}
                     </x-nav-link>
@@ -113,6 +114,7 @@ new class extends Component
             <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.index')" wire:navigate>
                 {{ __('Categorias') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('settings.analytics')" :active="request()->routeIs('settings.analytics')" wire:navigate>Analytics</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('documents.index')" :active="request()->routeIs('documents.index')" wire:navigate>
                 {{ __('Documentos') }}
             </x-responsive-nav-link>

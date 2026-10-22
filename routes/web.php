@@ -6,12 +6,15 @@ use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
+Route::get('/robots.txt', fn () => response()->view('robots')->header('Content-Type', 'text/plain; charset=UTF-8'));
+
 // Rotas públicas — cacheadas via middleware global web
 Volt::route('/', 'home')->name('home');
 Volt::route('autor/{user}', 'about')->name('author.show');
 Volt::route('categoria/{category:slug}', 'categories.show')->name('categories.show');
 Volt::route('tag/{tag:slug}', 'tags.show')->name('tags.show');
 Volt::route('biblioteca', 'documents.library')->name('documents.library');
+Volt::route('privacidade', 'privacy')->name('privacy');
 Route::get('/feed.rss', FeedController::class)->name('feed');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
@@ -34,6 +37,7 @@ Route::middleware(['auth', 'verified', 'doNotCacheResponse'])->group(function ()
     Volt::route('posts/{post}/edit', 'posts.edit')->name('posts.edit');
     Volt::route('categorias', 'categories.index')->name('categories.index');
     Volt::route('documentos', 'documents.index')->name('documents.index');
+    Volt::route('settings/analytics', 'settings.analytics')->name('settings.analytics');
     Volt::route('settings/ai', 'settings.ai-providers')->name('settings.ai');
 });
 

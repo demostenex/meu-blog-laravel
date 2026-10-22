@@ -12,4 +12,4 @@ Disallow: /verify-email
 Disallow: /livewire/
 Disallow: /up
 
-Sitemap: https://demostenesalbert.com.br/sitemap.xml
+Sitemap: {{ route('sitemap') }}
