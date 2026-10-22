@@ -195,3 +195,12 @@ O sitemap é gerado dinamicamente pelo Laravel em três endpoints:
 **Ping automático:** Toda vez que um rascunho é publicado, o Google é notificado automaticamente via `https://www.google.com/ping`.
 
 O `robots.txt` já aponta para o sitemap index e bloqueia todas as rotas de admin.
+
+
+### Robots.txt e Google Analytics
+
+O `/robots.txt` é servido pelo Laravel e aponta para o sitemap do domínio acessado, sem domínio fixo no código. O Nginx deve encaminhar essa URL ao `index.php`, conforme `nginx.conf`. Mantenha `APP_URL` com a URL pública do blog para links gerados fora de requisições HTTP.
+
+Em **Painel → Analytics**, informe o ID de medição do Google Analytics 4 (`G-...`). Não cole o script completo. Deixe o campo vazio para desativar. As páginas públicas só carregam a tag após autorização; o visitante pode rejeitar ou revogar em **Preferências do Google Analytics**. Essa escolha não desativa as estatísticas próprias do blog nem controla tags adicionadas por serviços externos.
+
+Ao publicar esta alteração, aplique as migrações (`php artisan migrate --force`), gere os assets (`npm run build`), limpe as views e o cache de respostas (`php artisan view:clear` e `php artisan responsecache:clear`) e recarregue o Nginx após atualizar sua configuração. Remova a cópia estática antiga de `public/robots.txt` durante a atualização, caso o processo de deploy preserve arquivos removidos do Git.
