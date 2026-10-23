@@ -49,14 +49,14 @@ class AnalyticsSettingsTest extends TestCase
     }
 
     #[Test]
-    public function consent_controls_only_appear_when_a_tag_is_configured(): void
+    public function privacy_toast_is_available_with_and_without_a_google_tag(): void
     {
         User::query()->update(['google_analytics_id' => null]);
         $user = User::first() ?? User::factory()->create();
         $this->actingAs($user);
-        $this->get('/privacidade')->assertOk()->assertDontSee('googleAnalyticsConsent(');
+        $this->get('/privacidade')->assertOk()->assertSee('Sua privacidade')->assertSee('Ver como são usados')->assertDontSee('G-ABC123');
         User::query()->update(['google_analytics_id' => 'G-ABC123']);
         $this->get('/privacidade')->assertOk()->assertSee('googleAnalyticsConsent(')
-            ->assertSee('Rejeitar Google Analytics')->assertSee('Aceitar Google Analytics');
+            ->assertSee('G-ABC123')->assertSee('Recusar')->assertSee('Aceitar');
     }
 }
