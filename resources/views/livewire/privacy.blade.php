@@ -27,7 +27,7 @@ new #[Layout('layouts.blog')] class extends Component {};
     @if (\App\Models\User::first()?->google_analytics_id)
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Google Analytics opcional</h2>
         <p>Quando você aceita o Google Analytics, carregamos a tag do Google para medir páginas visitadas, interações, origem do tráfego e informações do dispositivo. O Google pode utilizar cookies, como os da família <code>_ga</code>, e processar esses dados fora do Brasil. A tag permanece bloqueada até sua autorização.</p>
-        <p>Você pode aceitar, rejeitar ou revogar sua autorização em “Preferências do Google Analytics”, disponível no fim das páginas públicas. A escolha fica salva neste navegador por até 180 dias. As estatísticas próprias descritas acima continuam ativas independentemente dessa escolha.</p>
+        <p>Você pode aceitar, rejeitar ou revogar sua autorização em “Preferências de privacidade”, disponível no fim das páginas públicas. A escolha fica salva neste navegador por até 180 dias. As estatísticas próprias descritas acima continuam ativas independentemente dessa escolha.</p>
         <p>Consulte <a href="https://policies.google.com/technologies/partner-sites?hl=pt-BR" class="underline">como o Google usa dados de sites parceiros</a>.</p>
     @endif
 
