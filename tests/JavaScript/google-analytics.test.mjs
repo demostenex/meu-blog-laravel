@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../../resources/js/google-analytics.js', import.meta.url), 'utf8');
-function setup(choice = null) {
+function setup(choice = null, id = 'G-ABC123') {
     const scripts = [];
     const storage = new Map(choice ? [['ga-consent:G-ABC123', JSON.stringify(choice)]] : []);
     const context = {
@@ -13,7 +13,7 @@ function setup(choice = null) {
         document: { cookie: '_ga=old; _ga_ABC123=old; session=keep', getElementById: () => scripts[0], createElement: () => ({}), head: { appendChild: script => scripts.push(script) } },
     };
     vm.runInNewContext(source, context);
-    const consent = context.window.googleAnalyticsConsent('G-ABC123');
+    const consent = context.window.googleAnalyticsConsent(id);
     consent.init();
     return { consent, scripts, context, storage };
 }
@@ -42,4 +42,13 @@ test('saved acceptance loads while saved rejection and expired choices do not', 
     const expired = setup({ accepted: true, expires: Date.now() - 10000 });
     assert.equal(expired.scripts.length, 0);
     assert.equal(expired.consent.open, true);
+});
+
+test('notice without a Google tag stores the choice without loading Google', () => {
+    const { consent, scripts, storage } = setup(null, null);
+    assert.equal(consent.open, true);
+    consent.choose(true);
+    assert.equal(consent.open, false);
+    assert.equal(scripts.length, 0);
+    assert.equal(JSON.parse(storage.get('ga-consent:privacy-notice')).accepted, true);
 });

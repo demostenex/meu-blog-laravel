@@ -96,13 +96,6 @@
             </div>
         </nav>
 
-        <aside aria-label="Aviso de privacidade" class="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-            <p class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-sm text-gray-700 dark:text-gray-300">
-                Coletamos dados de navegação para entender o uso do blog. Usamos cookies, estatísticas próprias e serviços da Cloudflare.
-                <a href="{{ route('privacy') }}" class="underline font-semibold hover:text-blue-600 dark:hover:text-blue-400">Saiba como seus dados são usados.</a>
-            </p>
-        </aside>
-
         <main>
             {{ $slot }}
         </main>
@@ -115,7 +108,10 @@
                 <p class="text-gray-500 dark:text-gray-400 text-sm">
                     &copy; {{ date('Y') }} {{ config('app.name') }}. Todos os direitos reservados.
                 </p>
-                <a href="{{ route('privacy') }}" class="inline-block mt-4 text-sm text-gray-600 dark:text-gray-300 underline">Privacidade e cookies</a>
+                <div class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
+                    <a href="{{ route('privacy') }}" class="underline">Privacidade e cookies</a>
+                    <button type="button" @click="$dispatch('open-privacy-preferences')" class="underline">Preferências de privacidade</button>
+                </div>
             </div>
         </footer>
     </body>

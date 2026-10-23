@@ -3,9 +3,9 @@ window.googleAnalyticsConsent = (id) => ({
     open: false,
     init() {
         try {
-            const choice = JSON.parse(localStorage.getItem(`ga-consent:${id}`));
+            const choice = JSON.parse(localStorage.getItem(`ga-consent:${id || 'privacy-notice'}`));
             if (choice && typeof choice.accepted === 'boolean' && choice.expires > Date.now()) {
-                if (choice.accepted) this.load();
+                if (choice.accepted && id) this.load();
                 return;
             }
         } catch (_) { /* Show choices when storage is unavailable. */ }
@@ -13,11 +13,12 @@ window.googleAnalyticsConsent = (id) => ({
     },
     choose(accepted) {
         try {
-            localStorage.setItem(`ga-consent:${id}`, JSON.stringify({
+            localStorage.setItem(`ga-consent:${id || 'privacy-notice'}`, JSON.stringify({
                 accepted, expires: Date.now() + 180 * 24 * 60 * 60 * 1000,
             }));
         } catch (_) { /* The current page still honors the choice. */ }
         this.open = false;
+        if (!id) return;
         window[`ga-disable-${id}`] = !accepted;
         if (accepted) {
             this.load();
