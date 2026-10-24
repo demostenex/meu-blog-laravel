@@ -516,10 +516,10 @@ new class extends Component
                         <div class="flex items-center gap-3">
                             <button type="button" @click="switchLang('pt')"
                                 :class="lang === 'pt' ? 'opacity-100 ring-2 ring-indigo-500' : 'opacity-40 hover:opacity-70'"
-                                class="text-2xl rounded-full p-0.5 transition-all" title="Editar em Português">🇧🇷</button>
+                                class="text-2xl rounded-full p-0.5 transition-all" title="Editar em Português"><x-language-flag country="br" /></button>
                             <button type="button" @click="switchLang('en')"
                                 :class="lang === 'en' ? 'opacity-100 ring-2 ring-indigo-500' : 'opacity-40 hover:opacity-70'"
-                                class="text-2xl rounded-full p-0.5 transition-all" title="Edit in English">🇺🇸</button>
+                                class="text-2xl rounded-full p-0.5 transition-all" title="Edit in English"><x-language-flag country="us" /></button>
                             <span x-show="lang === 'en'" class="text-xs text-amber-600 dark:text-amber-400">Editando versão em inglês</span>
                         </div>
                     @endif
@@ -912,7 +912,7 @@ new class extends Component
                             </button>
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{{ \Str::limit(strip_tags($post->content_en), 300) }}</p>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Use 🇺🇸 acima para editar o conteúdo em inglês diretamente no editor.</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Use <x-language-flag country="us" /> acima para editar o conteúdo em inglês diretamente no editor.</p>
                         @if ($post->content_en_locked)
                             <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">A IA não irá sobrescrever esta tradução.</p>
                         @endif

@@ -183,11 +183,11 @@ new #[Layout('layouts.blog')] class extends Component
                     <div class="inline-flex rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden text-xs font-semibold">
                         <button wire:click="switchLang('pt')"
                                 class="px-4 py-1.5 transition-colors {{ $lang === 'pt' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800' }}">
-                            🇧🇷 Português
+                            <x-language-flag country="br" /> Português
                         </button>
                         <button wire:click="switchLang('en')"
                                 class="px-4 py-1.5 transition-colors {{ $lang === 'en' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800' }}">
-                            🇺🇸 English
+                            <x-language-flag country="us" /> English
                         </button>
                     </div>
                 </div>

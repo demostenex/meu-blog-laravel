@@ -146,7 +146,7 @@ new class extends Component
                                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white max-w-xs">
                                             <span class="line-clamp-2">{{ $post->title }}</span>
                                             @if($post->content_en_status === 'done')
-                                                <span class="ml-1" title="Tradução em inglês disponível">🇺🇸</span>
+                                                <span class="ml-1" title="Tradução em inglês disponível"><x-language-flag country="us" /></span>
                                             @endif
                                             @if($post->audio_status === 'done')
                                                 <span class="ml-1" title="Áudio disponível">🔊</span>
