@@ -18,8 +18,11 @@ flock -n 9 || exit 0
 state="$git_dir/autoupdate.deployed"
 compose=(docker compose -f docker-compose.prod.yml)
 [[ -f .env && -f Dockerfile.prod ]] || { log 'Configure .env e Dockerfile.prod antes de agendar.'; exit 1; }
-[[ -z "$(git status --porcelain --untracked-files=normal)" ]] || {
+local_changes=$(git status --porcelain --untracked-files=normal)
+[[ -z "$local_changes" ]] || {
     log 'Atualização cancelada: existem alterações locais ou arquivos não rastreados. Nenhum arquivo foi descartado.'
+    printf '%s\n' "$local_changes"
+    log 'Publique as alterações de código antes de atualizar. Para arquivos exclusivos deste servidor, revise as regras de .gitignore ou .git/info/exclude.'
     exit 1
 }
 branch=$(git symbolic-ref --quiet --short HEAD) || { log 'HEAD precisa estar em uma branch.'; exit 1; }
