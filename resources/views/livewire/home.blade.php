@@ -169,7 +169,7 @@ new #[Layout('layouts.blog')] class extends Component {
                                 <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-3 leading-tight">
                                     <a href="{{ route('posts.show', $post->slug) }}">{{ $post->title }}</a>
                                     @if($post->content_en_status === 'done')
-                                        <span class="ml-1 text-xl" title="English version available">🇺🇸</span>
+                                        <span class="ml-1 text-xl" title="English version available"><x-language-flag country="us" /></span>
                                     @endif
                                 </h3>
                                 
